@@ -24,3 +24,6 @@ libelixir-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Dialyzer plts
+/priv/plts

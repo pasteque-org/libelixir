@@ -1,13 +1,15 @@
-defmodule ArchethicSDK.MixProject do
+defmodule ArchethicClient.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :archehtic_sdk,
+      app: :archethic_client,
       version: "0.1.0",
-      elixir: "~> 1.17",
+      elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      dialyzer: dialyzer(),
+      consolidate_protocols: Mix.env() == :prod
     ]
   end
 
@@ -15,7 +17,15 @@ defmodule ArchethicSDK.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {ArchethicSDK.Application, []}
+      mod: {ArchethicClient.Application, []}
+    ]
+  end
+
+  # Specify dialyzer path
+  defp dialyzer do
+    [
+      plt_core_path: "priv/plts",
+      plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
     ]
   end
 
