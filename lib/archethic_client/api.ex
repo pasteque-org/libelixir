@@ -3,10 +3,12 @@ defmodule ArchethicClient.API do
   Main functions to execute requests to Archethic network
   """
 
+  alias ArchethicClient.API.SubscriptionSupervisor
   alias ArchethicClient.APIError
   alias ArchethicClient.Request
+  alias ArchethicClient.Subscription
 
-  @type request_opts :: [base_url: String.t()]
+  @type request_opts :: [base_url: String.t(), parent: pid()]
 
   @doc """
   Send a request to Archethic network
@@ -17,17 +19,15 @@ defmodule ArchethicClient.API do
     if Request.subscription?(request) do
       {:error, %APIError{request: request, message: "Cannot request on subscription"}}
     else
-      Keyword.validate!(opts, [:base_url])
-
       base_url =
-        Keyword.get_lazy(opts, :base_url, fn ->
-          Application.fetch_env!(:archethic_client, :base_url)
-        end)
+        opts
+        |> Keyword.validate!([:base_url, :parent])
+        |> Keyword.get_lazy(:base_url, fn -> Application.fetch_env!(:archethic_client, :base_url) end)
 
       request_id = Request.request_id(request, 0)
       body = Request.format_body(request, request_id)
 
-      req = Req.new(base_url: base_url) |> prepare_req(Request.type(request), body)
+      req = [base_url: base_url] |> Req.new() |> prepare_req(Request.type(request), body)
 
       case Req.request(req) do
         {:ok, response} -> Request.format_response(request, request_id, response)
@@ -44,6 +44,34 @@ defmodule ArchethicClient.API do
     case request(request, opts) do
       {:ok, res} -> res
       {:error, reason} when is_exception(reason) -> raise reason
+    end
+  end
+
+  @doc """
+  Subscribe to event on Archethic network
+  """
+  @spec subscribe(request :: Request.t(), opts :: request_opts()) ::
+          {:ok, subscription_ref :: reference()} | {:error, Exception.t()}
+  def subscribe(request, opts \\ []) do
+    if Request.subscription?(request) do
+      opts = Keyword.validate!(opts, [:base_url, parent: self()])
+      parent = Keyword.fetch!(opts, :parent)
+      base_url = Keyword.get_lazy(opts, :base_url, fn -> Application.fetch_env!(:archethic_client, :base_url) end)
+
+      request_id = Request.request_id(request, 0)
+      body = Request.format_body(request, request_id)
+
+      {ws, req} = [base_url: base_url] |> Req.new() |> prepare_sub(Request.type(request), body, parent)
+
+      case DynamicSupervisor.start_child(
+             SubscriptionSupervisor,
+             {Subscription, ws: ws, req: req, request: request, request_id: request_id, send_to: parent}
+           ) do
+        {:ok, _pid, ref} -> {:ok, ref}
+        er -> er
+      end
+    else
+      {:error, %APIError{request: request, message: "Not a subscription"}}
     end
   end
 
@@ -124,7 +152,7 @@ defmodule ArchethicClient.API do
         Request.format_body(request, request_id)
       end)
 
-    req = Req.new(base_url: base_url) |> prepare_req(request_type, bodies)
+    req = [base_url: base_url] |> Req.new() |> prepare_req(request_type, bodies)
 
     case Req.request(req) do
       {:ok, response} ->
@@ -137,13 +165,21 @@ defmodule ArchethicClient.API do
     end
   end
 
-  defp prepare_req(req, :rpc, body),
-    do: Req.merge(req, method: :post, url: "/api/rpc", json: body)
+  defp prepare_req(req, :rpc, body), do: Req.merge(req, method: :post, url: "/api/rpc", json: body)
 
-  defp prepare_req(req, :graphql, body) do
+  defp prepare_req(req, :graphql_query, body) do
     req
     |> AbsintheClient.attach(graphql: "query { #{format_graphql(body)} }")
     |> Req.merge(method: :post, url: "/api")
+  end
+
+  defp prepare_sub(req, :graphql_subscription, body, parent) do
+    req = AbsintheClient.attach(req, graphql: "subscription { #{format_graphql(body)} }")
+
+    case AbsintheClient.WebSocket.connect(req, parent: parent) do
+      {:ok, ws} -> {ws, Req.merge(req, web_socket: ws, method: :post, url: "/api")}
+      er -> er
+    end
   end
 
   defp format_graphql(queries) when is_list(queries), do: Enum.join(queries, ", ")

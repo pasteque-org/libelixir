@@ -1,5 +1,6 @@
 defmodule ArchethicClientTest do
   use ExUnit.Case
+
   doctest ArchethicClient
 
   test "greets the world" do

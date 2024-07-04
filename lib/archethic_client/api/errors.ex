@@ -1,3 +1,58 @@
+defmodule ArchethicClient.APIError do
+  @moduledoc """
+  Represent an error from the API module
+  """
+
+  defexception [:request, :message]
+end
+
+defmodule ArchethicClient.GraphqlError do
+  @moduledoc """
+  Represent an error returned by the Archethic network using Graphql request
+  """
+
+  defexception [:location, :message]
+end
+
+defmodule ArchethicClient.RPCError do
+  @moduledoc """
+  Represent an error returned by the Archethic network using RPC request
+  """
+
+  defexception [:message, :code, :data]
+end
+
+defmodule ArchethicClient.ValidationError do
+  @moduledoc """
+  Represent an error returned by the Archethic network when validating a transaction
+  """
+  defexception [:address, :context, :message, :code, :data]
+
+  def message(%__MODULE__{context: context, message: message, data: data}) do
+    messages = stringify_data(data)
+    Enum.join([context, message | messages], ": ")
+  end
+
+  defp stringify_data(data, acc \\ [])
+  defp stringify_data(data, acc) when is_binary(data), do: [data | acc]
+
+  defp stringify_data(%{message: message, data: data}, acc) when is_binary(message),
+    do: stringify_data(data, [message | acc])
+
+  defp stringify_data(_data, acc), do: Enum.reverse(acc)
+
+  @doc """
+  Transform a map to a validation error exception
+  """
+  @spec from_map(map :: map()) :: Exception.t()
+  def from_map(%{
+        "address" => address,
+        "context" => context,
+        "error" => %{"code" => code, "message" => message, "data" => data}
+      }),
+      do: %__MODULE__{address: address, context: context, code: code, message: message, data: data}
+end
+
 defmodule ArchethicClient.RequestError do
   @moduledoc """
   Represent an error returned by the Archethic network
@@ -73,12 +128,11 @@ defmodule ArchethicClient.RequestError do
 
   defexception [:http_status, :body]
 
-  def message(%__MODULE__{http_status: status, body: ""}),
-    do: Map.get(@statuses, status, "Unknown http status error")
+  @spec message(exception :: Exception.t()) :: message :: String.t()
+  def message(%__MODULE__{http_status: status, body: ""}), do: Map.get(@statuses, status, "Unknown http status error")
 
   def message(%__MODULE__{body: body}) when is_binary(body), do: body
   def message(%__MODULE__{body: %{"error" => error}}) when is_binary(error), do: error
 
-  def message(%__MODULE__{body: %{"error" => %{"message" => message}}}) when is_binary(message),
-    do: message
+  def message(%__MODULE__{body: %{"error" => %{"message" => message}}}) when is_binary(message), do: message
 end

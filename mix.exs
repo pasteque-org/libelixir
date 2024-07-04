@@ -36,9 +36,13 @@ defmodule ArchethicClient.MixProject do
       {:req, "~> 0.5"},
       {:absinthe_client, "~> 0.1"},
 
+      # Utils
+      {:decimal, "~> 2.0"},
+
       # Dev
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:styler, "~> 1.0.0-rc.2", only: [:dev, :test], runtime: false}
     ]
   end
 end

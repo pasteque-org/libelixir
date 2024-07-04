@@ -3,9 +3,11 @@ defmodule ArchethicClient.RequestHelper do
   Helper to create common request or subscription
   """
 
+  alias ArchethicClient.Crypto
   alias ArchethicClient.Graphql
   alias ArchethicClient.Request
   alias ArchethicClient.RPC
+  alias ArchethicClient.Transaction
 
   @typedoc """
   Options for the contract_function_call Request.
@@ -16,7 +18,7 @@ defmodule ArchethicClient.RequestHelper do
   @doc """
   Returns a Request struct to get the balance of a chain
   """
-  @spec get_balance(address :: String.t()) :: Request.t(Graphql)
+  @spec get_balance(address :: Crypto.hex_address()) :: Request.t(Graphql)
   def get_balance(address) do
     %Graphql{
       name: "balance",
@@ -29,7 +31,7 @@ defmodule ArchethicClient.RequestHelper do
   Returns a Request struct to call a public function of a smart contract
   """
   @spec contract_function_call(
-          address :: String.t(),
+          address :: Crypto.hex_address(),
           function :: String.t(),
           args :: list(),
           opts :: contract_fun_opts()
@@ -45,5 +47,38 @@ defmodule ArchethicClient.RequestHelper do
     }
 
     %RPC{method: "contract_fun", params: params}
+  end
+
+  @doc """
+  Returns a Request struct to send a transaction
+  """
+  @spec send_transaction(transaction :: Transaction.t()) :: Request.t(RPC)
+  def send_transaction(transaction),
+    do: %RPC{method: "send_transaction", params: %{transaction: Transaction.to_map(transaction)}}
+
+  @doc """
+  Returns a Request to subscribe on transaction confirmed
+  """
+  @spec subscribe_transaction_confirmed(address :: Crypto.hex_address()) :: Request.t(Graphql)
+  def subscribe_transaction_confirmed(address) do
+    %Graphql{
+      type: :subscription,
+      name: "transactionConfirmed",
+      args: [address: address],
+      fields: [:address, :nbConfirmations, :maxConfirmations]
+    }
+  end
+
+  @doc """
+  Returns a Request to subscribe on transaction error
+  """
+  @spec subscribe_transaction_error(address :: Crypto.hex_address()) :: Request.t(Graphql)
+  def subscribe_transaction_error(address) do
+    %Graphql{
+      type: :subscription,
+      name: "transactionError",
+      args: [address: address],
+      fields: [:address, :context, error: [:code, :message, :data]]
+    }
   end
 end

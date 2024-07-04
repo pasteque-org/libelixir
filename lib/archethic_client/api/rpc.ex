@@ -31,13 +31,15 @@ defmodule ArchethicClient.RPC do
     def format_body(%RPC{method: method, params: params}, request_id),
       do: %{jsonrpc: "2.0", id: request_id, method: method, params: params}
 
+    @spec format_message(request :: RPC.t(), request_id :: String.t(), message :: term()) :: term()
+    def format_message(_, _, message), do: message
+
     @spec format_response(
             request :: RPC.t(),
             request_id :: String.t(),
             response :: Req.Response.t()
           ) :: {:ok, term()} | {:error, Exception.t()}
-    def format_response(_, _, %Req.Response{status: 200, body: %{"result" => result}}),
-      do: {:ok, result}
+    def format_response(_, _, %Req.Response{status: 200, body: %{"result" => result}}), do: {:ok, result}
 
     def format_response(_, _, %Req.Response{status: 200, body: %{"error" => error}}) do
       rpc_error =
@@ -50,7 +52,7 @@ defmodule ArchethicClient.RPC do
       {:error, rpc_error}
     end
 
-    def format_response(request, request_id, response = %Req.Response{status: 200, body: results})
+    def format_response(request, request_id, %Req.Response{status: 200, body: results} = response)
         when is_list(results) do
       request_response = Enum.find(results, nil, &match?(^request_id, &1["id"]))
       format_response(request, request_id, %Req.Response{response | body: request_response})

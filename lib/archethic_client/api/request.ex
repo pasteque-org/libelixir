@@ -36,4 +36,10 @@ defprotocol ArchethicClient.Request do
   """
   @spec request_id(request :: t(), index :: non_neg_integer()) :: term()
   def request_id(request, index)
+
+  @doc """
+  Format a message received by websocket subscription
+  """
+  @spec format_message(request :: t(), request_id :: term(), message :: term()) :: term()
+  def format_message(request, request_id, message)
 end
