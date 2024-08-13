@@ -34,7 +34,8 @@ defmodule ArchethicClient.MixProject do
     [
       # Web
       {:req, "~> 0.5"},
-      {:absinthe_client, "~> 0.1"},
+      # Currently using fork waiting for issue: https://github.com/CargoSense/absinthe_client/issues/19
+      {:absinthe_client, git: "https://github.com/Neylix/absinthe_client.git"},
 
       # Utils
       {:decimal, "~> 2.0"},
