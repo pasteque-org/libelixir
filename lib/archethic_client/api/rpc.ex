@@ -13,7 +13,7 @@ defmodule ArchethicClient.RPC do
           params: map()
         }
 
-  defimpl Request, for: __MODULE__ do
+  defimpl Request, for: ArchethicClient.RPC do
     alias ArchethicClient.RequestError
     alias ArchethicClient.RPC
     alias ArchethicClient.RPCError
@@ -42,12 +42,11 @@ defmodule ArchethicClient.RPC do
     def format_response(_, _, %Req.Response{status: 200, body: %{"result" => result}}), do: {:ok, result}
 
     def format_response(_, _, %Req.Response{status: 200, body: %{"error" => error}}) do
-      rpc_error =
-        %RPCError{
-          message: Map.get(error, "message"),
-          code: Map.get(error, "code"),
-          data: Map.get(error, "data")
-        }
+      rpc_error = %RPCError{
+        message: Map.get(error, "message"),
+        code: Map.get(error, "code"),
+        data: Map.get(error, "data")
+      }
 
       {:error, rpc_error}
     end

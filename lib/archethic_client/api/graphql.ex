@@ -46,7 +46,7 @@ defmodule ArchethicClient.Graphql do
       do: stringify_fields(rest, "#{acc}, #{type} {#{stringify_fields(fields)}}")
   end
 
-  defimpl Request, for: __MODULE__ do
+  defimpl Request, for: ArchethicClient.Graphql do
     alias ArchethicClient.Graphql
     alias ArchethicClient.GraphqlError
     alias ArchethicClient.RequestError
