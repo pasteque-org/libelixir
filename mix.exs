@@ -43,7 +43,7 @@ defmodule ArchethicClient.MixProject do
       # Dev
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:styler, "~> 1.0.0-rc.2", only: [:dev, :test], runtime: false}
+      {:styler, "~> 1.0.0", only: [:dev, :test], runtime: false}
     ]
   end
 end
