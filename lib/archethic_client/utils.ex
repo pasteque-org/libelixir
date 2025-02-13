@@ -15,10 +15,10 @@ defmodule ArchethicClient.Utils do
       <<33, 50, 10>>
 
       iex> Utils.wrap_binary([<<1::1, 1::1, 1::1>>, "hello"])
-      [<<1::1, 1::1, 1::1, 0::1, 0::1, 0::1, 0::1, 0::1>>, "hello"]
+      <<1::1, 1::1, 1::1, 0::1, 0::1, 0::1, 0::1, 0::1, "hello"::binary>>
 
       iex> Utils.wrap_binary([[<<1::1, 1::1, 1::1>>, "abc"], "hello"])
-      [[<<1::1, 1::1, 1::1, 0::1, 0::1, 0::1, 0::1, 0::1>>, "abc"], "hello"]
+      <<1::1, 1::1, 1::1, 0::1, 0::1, 0::1, 0::1, 0::1, "abc"::binary, "hello"::binary>>
   """
   @spec wrap_binary(iodata() | bitstring() | list(bitstring())) :: binary()
   def wrap_binary(bits) when is_binary(bits), do: bits
@@ -43,7 +43,7 @@ defmodule ArchethicClient.Utils do
   end
 
   def wrap_binary([data | rest], acc) when is_bitstring(data), do: wrap_binary(rest, [wrap_binary(data) | acc])
-  def wrap_binary([], acc), do: Enum.reverse(acc)
+  def wrap_binary([], acc), do: acc |> Enum.reverse() |> List.flatten() |> Enum.join()
 
   defp pad_bitstring(original_bits, additional_bits), do: <<original_bits::bitstring, 0::size(additional_bits)>>
 
