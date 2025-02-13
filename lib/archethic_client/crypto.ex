@@ -8,8 +8,6 @@ defmodule ArchethicClient.Crypto do
   alias __MODULE__.ID
   alias ArchethicClient.Utils
 
-  require Logger
-
   @typedoc """
   List of the supported hash algorithms
   """
@@ -42,7 +40,7 @@ defmodule ArchethicClient.Crypto do
   """
   @type hex_address :: String.t()
 
-  @type sha256 :: <<_::32>>
+  @type sha256 :: <<_::256>>
 
   @typedoc """
   Binary representing a key prepend by two bytes:
@@ -480,4 +478,32 @@ defmodule ArchethicClient.Crypto do
     |> Keyword.take(opts_key)
     |> Enum.sort()
   end
+
+  @doc """
+  Determine if a public key is valid
+  """
+  @spec valid_public_key?(binary()) :: boolean()
+  def valid_public_key?(<<curve::8, _::8, public_key::binary>>) when curve in [0, 1, 2],
+    do: byte_size(public_key) == key_size(curve)
+
+  def valid_public_key?(_), do: false
+
+  @doc """
+  Determine if a hash is valid
+  """
+  @spec valid_hash?(binary()) :: boolean()
+  def valid_hash?(<<0::8, _::binary-size(32)>>), do: true
+  def valid_hash?(<<1::8, _::binary-size(64)>>), do: true
+  def valid_hash?(<<2::8, _::binary-size(32)>>), do: true
+  def valid_hash?(<<3::8, _::binary-size(64)>>), do: true
+  def valid_hash?(<<4::8, _::binary-size(64)>>), do: true
+  def valid_hash?(<<5::8, _::binary-size(32)>>), do: true
+  def valid_hash?(_), do: false
+
+  @doc """
+  Determine if an address is valid
+  """
+  @spec valid_address?(binary()) :: boolean()
+  def valid_address?(<<curve::8, rest::binary>>) when curve in [0, 1, 2], do: valid_hash?(rest)
+  def valid_address?(_), do: false
 end
