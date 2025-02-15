@@ -506,4 +506,29 @@ defmodule ArchethicClient.Crypto do
   @spec valid_address?(binary()) :: boolean()
   def valid_address?(<<curve::8, rest::binary>>) when curve in [0, 1, 2], do: valid_hash?(rest)
   def valid_address?(_), do: false
+
+  @doc """
+  Verify a signature.
+
+  The first byte of the public key identifies the curve and the verification algorithm to use.
+
+  ## Examples
+
+      iex> {pub, pv} = Crypto.generate_deterministic_keypair("myseed")
+      ...> sig = Crypto.sign("myfakedata", pv)
+      ...> Crypto.verify?(sig, "myfakedata", pub)
+      true
+
+      iex> {pub, _} = Crypto.generate_deterministic_keypair("myseed")
+      ...> sig = :crypto.strong_rand_bytes(72)
+      ...> Crypto.verify?(sig, "myfakedata", pub)
+      false
+  """
+  @spec verify?(signature :: binary(), data :: iodata() | bitstring() | [bitstring], public_key :: key()) :: boolean()
+  def verify?(sig, data, <<curve_id::8, _::8, key::binary>> = _public_key) when is_bitstring(data) or is_list(data) do
+    curve_id |> ID.to_curve() |> do_verify?(key, Utils.wrap_binary(data), sig)
+  end
+
+  defp do_verify?(:ed25519, key, data, sig), do: Ed25519.verify?(key, data, sig)
+  defp do_verify?(curve, key, data, sig), do: ECDSA.verify?(curve, key, data, sig)
 end
