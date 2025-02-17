@@ -52,17 +52,24 @@ defmodule ArchethicClient.Utils do
   """
   @spec to_bigint(value :: integer() | float() | String.t() | Decimal.t(), decimals :: non_neg_integer()) :: integer()
   def to_bigint(value, decimals \\ 8)
-  def to_bigint(value, decimals) when is_integer(value), do: value * get_mult(decimals)
+  def to_bigint(value, decimals) when is_integer(value), do: value * get_factor(decimals)
   def to_bigint(%Decimal{} = value, decimals), do: do_to_big_int(value, decimals)
   def to_bigint(value, decimals) when is_float(value), do: value |> Decimal.from_float() |> do_to_big_int(decimals)
   def to_bigint(value, decimals) when is_binary(value), do: value |> Decimal.new() |> do_to_big_int(decimals)
 
   defp do_to_big_int(dec, decimals) do
     dec
-    |> Decimal.mult(get_mult(decimals))
+    |> Decimal.mult(get_factor(decimals))
     |> Decimal.round(0, :floor)
     |> Decimal.to_integer()
   end
 
-  defp get_mult(decimals), do: 10 |> :math.pow(decimals) |> trunc()
+  @doc """
+  Convert a bigint to a string | float | Decimal.t()
+  """
+  @spec from_bigint(bigint :: integer(), decimals :: non_neg_integer()) :: String.t()
+  def from_bigint(bigint, decimals \\ 8),
+    do: bigint |> Decimal.new() |> Decimal.div(get_factor(decimals)) |> Decimal.to_string()
+
+  defp get_factor(decimals), do: 10 |> :math.pow(decimals) |> trunc()
 end
