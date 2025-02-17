@@ -24,10 +24,12 @@ defmodule ArchethicClient.API do
         |> Keyword.validate!([:base_url, :parent])
         |> Keyword.get_lazy(:base_url, fn -> Application.fetch_env!(:archethic_client, :base_url) end)
 
+      client_opts = Application.get_env(:archethic_client, :req_request_opts, [])
+
       request_id = Request.request_id(request, 0)
       body = Request.format_body(request, request_id)
 
-      req = [base_url: base_url] |> Req.new() |> prepare_req(Request.type(request), body)
+      req = [base_url: base_url] |> Req.new() |> prepare_req(Request.type(request), body) |> Req.merge(client_opts)
 
       case Req.request(req) do
         {:ok, response} -> Request.format_response(request, request_id, response)
@@ -58,10 +60,13 @@ defmodule ArchethicClient.API do
       parent = Keyword.fetch!(opts, :parent)
       base_url = Keyword.get_lazy(opts, :base_url, fn -> Application.fetch_env!(:archethic_client, :base_url) end)
 
+      client_opts = Application.get_env(:archethic_client, :req_subscription_opts, [])
+
       request_id = Request.request_id(request, 0)
       body = Request.format_body(request, request_id)
 
       {ws, req} = [base_url: base_url] |> Req.new() |> prepare_sub(Request.type(request), body, parent)
+      req = Req.merge(req, client_opts)
 
       case DynamicSupervisor.start_child(
              SubscriptionSupervisor,
