@@ -50,8 +50,8 @@ defmodule ArchethicClient.Utils do
   @doc """
   Convert a number to a bigint
   """
-  @spec to_bigint(integer() | float() | String.t() | Decimal.t(), decimals :: non_neg_integer()) :: integer()
-  def to_bigint(valuen, decimals \\ 8)
+  @spec to_bigint(value :: integer() | float() | String.t() | Decimal.t(), decimals :: non_neg_integer()) :: integer()
+  def to_bigint(value, decimals \\ 8)
   def to_bigint(value, decimals) when is_integer(value), do: value * get_mult(decimals)
   def to_bigint(%Decimal{} = value, decimals), do: do_to_big_int(value, decimals)
   def to_bigint(value, decimals) when is_float(value), do: value |> Decimal.from_float() |> do_to_big_int(decimals)
