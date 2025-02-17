@@ -5,6 +5,7 @@ defmodule ArchethicClient.API do
 
   alias ArchethicClient.API.SubscriptionSupervisor
   alias ArchethicClient.APIError
+  alias ArchethicClient.APITest
   alias ArchethicClient.Request
   alias ArchethicClient.Subscription
 
@@ -16,25 +17,52 @@ defmodule ArchethicClient.API do
   @spec request(request :: Request.t(), opts :: request_opts()) ::
           {:ok, term()} | {:error, reason :: Exception.t()}
   def request(request, opts \\ []) do
-    if Request.subscription?(request) do
-      {:error, %APIError{request: request, message: "Cannot request on subscription"}}
-    else
-      base_url =
-        opts
-        |> Keyword.validate!([:base_url, :parent])
-        |> Keyword.get_lazy(:base_url, fn -> Application.fetch_env!(:archethic_client, :base_url) end)
+    cond do
+      Request.subscription?(request) ->
+        {:error, %APIError{request: request, message: "Cannot request on subscription"}}
 
-      client_opts = Application.get_env(:archethic_client, :req_request_opts, [])
+      Application.get_env(:archethic_client, :enable_mock?, false) ->
+        do_mock_request(request)
 
-      request_id = Request.request_id(request, 0)
-      body = Request.format_body(request, request_id)
+      true ->
+        do_request(request, opts)
+    end
+  end
 
-      req = [base_url: base_url] |> Req.new() |> prepare_req(Request.type(request), body) |> Req.merge(client_opts)
+  defp do_request(request, opts) do
+    base_url =
+      opts
+      |> Keyword.validate!([:base_url, :parent])
+      |> Keyword.get_lazy(:base_url, fn -> Application.fetch_env!(:archethic_client, :base_url) end)
 
-      case Req.request(req) do
-        {:ok, response} -> Request.format_response(request, request_id, response)
-        {:error, reason} -> {:error, reason}
-      end
+    client_opts = Application.get_env(:archethic_client, :req_request_opts, [])
+
+    request_id = Request.request_id(request, 0)
+    body = Request.format_body(request, request_id)
+
+    req = [base_url: base_url] |> Req.new() |> prepare_req(Request.type(request), body) |> Req.merge(client_opts)
+
+    case Req.request(req) do
+      {:ok, response} -> Request.format_response(request, request_id, response)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp do_mock_request(request) do
+    req =
+      [base_url: "http://localhost:4000"]
+      |> Req.new()
+      |> Req.Request.put_private(:archethic_client, request)
+      |> Req.merge(plug: {Req.Test, APITest}, into: &APITest.parse_resp/2)
+
+    me = self()
+    owner_pid = me |> Process.info(:dictionary) |> elem(1) |> Keyword.get(:"$ancestors", []) |> List.last(me)
+
+    Req.Test.allow(APITest, owner_pid, me)
+
+    case Req.request(req) do
+      {:ok, %Req.Response{status: 200, body: body}} -> {:ok, body}
+      {:error, reason} -> {:error, reason}
     end
   end
 
