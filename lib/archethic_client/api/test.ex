@@ -2,6 +2,7 @@ defmodule ArchethicClient.APITest do
   @moduledoc """
   Test module to mock Req request
   """
+  alias ArchethicClient.Crypto
 
   @doc """
   Stub request
@@ -25,4 +26,13 @@ defmodule ArchethicClient.APITest do
 
   defp create_resp_body(requests, callback) when is_list(requests), do: Enum.map(requests, &callback.(&1))
   defp create_resp_body(request, callback), do: callback.(request)
+
+  @doc """
+  Return a random address and format it
+  """
+  @spec random_address(format :: :binary | :hex) :: Crypto.address() | Crypto.hex_address()
+  def random_address(format \\ :binary) when format in [:binary, :hex] do
+    address = <<0::16, :crypto.strong_rand_bytes(32)::binary>>
+    if format == :hex, do: Base.encode16(address), else: address
+  end
 end
