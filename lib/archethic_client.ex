@@ -10,6 +10,7 @@ defmodule ArchethicClient do
   alias ArchethicClient.Request
   alias ArchethicClient.RequestHelper
   alias ArchethicClient.Subscription
+  alias ArchethicClient.TaskSupervisor
   alias ArchethicClient.Transaction
   alias ArchethicClient.ValidationError
 
@@ -118,12 +119,14 @@ defmodule ArchethicClient do
 
     # Runs in a task to close web socket after transaction validation
     task =
-      Task.async(fn ->
+      Task.Supervisor.async_nolink(TaskSupervisor, fn ->
         opts = Keyword.put(opts, :parent, self())
 
         subscriptions =
-          [confirmed_sub, error_sub]
-          |> Task.async_stream(&API.subscribe(&1, opts), on_timeout: :kill_task)
+          TaskSupervisor
+          |> Task.Supervisor.async_stream_nolink([confirmed_sub, error_sub], &API.subscribe(&1, opts),
+            on_timeout: :kill_task
+          )
           |> Enum.map(fn
             {:ok, res} -> res
             {:exit, reason} -> {:error, reason}

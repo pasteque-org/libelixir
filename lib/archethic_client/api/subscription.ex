@@ -4,7 +4,7 @@ defmodule ArchethicClient.Subscription do
   ArchethicClient Message
   """
 
-  use GenServer
+  use GenServer, restart: :transient
 
   alias ArchethicClient.API.SubscriptionRegistry
   alias ArchethicClient.Request

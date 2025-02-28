@@ -8,6 +8,7 @@ defmodule ArchethicClient.API do
   alias ArchethicClient.APITest
   alias ArchethicClient.Request
   alias ArchethicClient.Subscription
+  alias ArchethicClient.TaskSupervisor
 
   @type request_opts :: [base_url: String.t(), parent: pid()]
 
@@ -133,11 +134,14 @@ defmodule ArchethicClient.API do
         {index, error}
       end)
 
-    valid_indexed_requests = Map.get(group_by_subscription, false, [])
+    requests_by_type =
+      group_by_subscription
+      |> Map.get(false, [])
+      |> Enum.group_by(fn {request, _} -> Request.type(request) end)
 
-    valid_indexed_requests
-    |> Enum.group_by(fn {request, _} -> Request.type(request) end)
-    |> Task.async_stream(
+    TaskSupervisor
+    |> Task.Supervisor.async_stream_nolink(
+      requests_by_type,
       fn {request_type, indexed_requests} ->
         do_batch_request(base_url, request_type, indexed_requests)
       end,

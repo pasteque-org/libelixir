@@ -9,6 +9,7 @@ defmodule ArchethicClient.Application do
   def start(_type, _args) do
     childrens = [
       {Registry, name: ArchethicClient.API.SubscriptionRegistry, keys: :unique},
+      {Task.Supervisor, name: ArchethicClient.TaskSupervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: ArchethicClient.API.SubscriptionSupervisor}
     ]
 
