@@ -20,6 +20,19 @@ defmodule ArchethicClient.RPCError do
   """
 
   defexception [:message, :code, :data]
+
+  def message(%__MODULE__{message: message, data: data}) do
+    messages = data |> stringify_data() |> IO.inspect()
+    Enum.join([message | messages], ": ")
+  end
+
+  defp stringify_data(data, acc \\ [])
+  defp stringify_data(data, acc) when is_binary(data), do: [data | acc]
+
+  defp stringify_data(%{"message" => message, "data" => data}, acc) when is_binary(message),
+    do: stringify_data(data, [message | acc])
+
+  defp stringify_data(_data, acc), do: Enum.reverse(acc)
 end
 
 defmodule ArchethicClient.ValidationError do
@@ -36,7 +49,7 @@ defmodule ArchethicClient.ValidationError do
   defp stringify_data(data, acc \\ [])
   defp stringify_data(data, acc) when is_binary(data), do: [data | acc]
 
-  defp stringify_data(%{message: message, data: data}, acc) when is_binary(message),
+  defp stringify_data(%{"message" => message, "data" => data}, acc) when is_binary(message),
     do: stringify_data(data, [message | acc])
 
   defp stringify_data(_data, acc), do: Enum.reverse(acc)
