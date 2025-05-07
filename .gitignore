@@ -27,3 +27,5 @@ libelixir-*.tar
 
 # Dialyzer plts
 /priv/plts
+.cursor/
+.DS_Store
