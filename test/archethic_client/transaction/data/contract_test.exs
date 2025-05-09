@@ -60,10 +60,8 @@ defmodule ArchethicClient.TransactionData.ContractTest do
       }
 
       original_contract = %Contract{bytecode: bytecode, manifest: manifest}
-      # Arbitrary version for serialization as per spec
-      version = 1
 
-      serialized_contract = Contract.serialize(original_contract, version)
+      serialized_contract = Contract.serialize(original_contract)
 
       # Expected format: <<byte_size(bytecode)::32, bytecode::binary, TypedEncoding.serialize(manifest)::bitstring>>
       expected_bytecode_size = byte_size(bytecode)

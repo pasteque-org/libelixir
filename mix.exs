@@ -4,7 +4,7 @@ defmodule ArchethicClient.MixProject do
   def project do
     [
       app: :archethic_client,
-      version: "0.1.1",
+      version: "0.1.0",
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,

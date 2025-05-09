@@ -22,13 +22,10 @@ defmodule ArchethicClient.TransactionData.Contract do
   @doc """
   Serialize a contract
   """
-  @spec serialize(
-          contract :: t(),
-          version :: pos_integer()
-        ) :: bitstring()
-  def serialize(contract, version)
+  @spec serialize(contract :: t()) :: bitstring()
+  def serialize(contract)
 
-  def serialize(%__MODULE__{bytecode: bytecode, manifest: manifest}, _version) do
+  def serialize(%__MODULE__{bytecode: bytecode, manifest: manifest}) do
     <<byte_size(bytecode)::32, bytecode::binary, TypedEncoding.serialize(manifest)::bitstring>>
   end
 

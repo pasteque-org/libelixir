@@ -139,7 +139,7 @@ defmodule ArchethicClient.TransactionData do
   defp serialize_contract_field(nil), do: <<0::8>>
 
   defp serialize_contract_field(%Contract{} = contract) do
-    <<1::8, Contract.serialize(contract, 1)::bitstring>>
+    <<1::8, Contract.serialize(contract)::bitstring>>
   end
 
   @doc """
