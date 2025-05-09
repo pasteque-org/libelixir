@@ -151,7 +151,7 @@ defmodule ArchethicClient.TransactionData do
     %{
       content: "",
       contract: nil,
-      ledger: Ledger.to_map(nil),
+      ledger: %Ledger{},
       ownerships: [],
       recipients: []
     }

@@ -149,18 +149,11 @@ defmodule ArchethicClient.Transaction do
     }
   end
 
-  # Serializes the :keychain transaction type atom to its integer ID (255).
   defp serialize_type(:keychain), do: 255
-  # Serializes the :keychain_access transaction type atom to its integer ID (254).
   defp serialize_type(:keychain_access), do: 254
-  # Serializes the :transfer transaction type atom to its integer ID (253).
   defp serialize_type(:transfer), do: 253
-  # Serializes the :hosting transaction type atom to its integer ID (252).
   defp serialize_type(:hosting), do: 252
-  # Serializes the :token transaction type atom to its integer ID (251).
   defp serialize_type(:token), do: 251
-  # Serializes the :data transaction type atom to its integer ID (250).
   defp serialize_type(:data), do: 250
-  # Serializes the :contract transaction type atom to its integer ID (249).
   defp serialize_type(:contract), do: 249
 end
