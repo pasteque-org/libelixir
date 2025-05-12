@@ -5,7 +5,7 @@ defmodule ArchethicClient.TransactionData.Recipient do
   A recipient record specifies:
   - `address`: The address of the target smart contract.
   - `action`: The name of the function (action) to be called on the smart contract. Can be `nil`.
-  - `args`: A list of arguments to be passed to the smart contract function. Can be `nil`.
+  - `args`: A map of arguments to be passed to the smart contract function. Can be `nil`.
 
   The `action` and `args` fields might be `nil` if the transaction itself is the trigger
   (e.g., a simple transfer to a contract address that has a default payable/receive function),
@@ -19,7 +19,7 @@ defmodule ArchethicClient.TransactionData.Recipient do
   @type t :: %__MODULE__{
           address: Crypto.address(),
           action: String.t() | nil,
-          args: list(any()) | nil
+          args: map() | nil
         }
 
   @doc """
@@ -28,12 +28,11 @@ defmodule ArchethicClient.TransactionData.Recipient do
   @spec serialize(recipient :: t()) :: binary()
   def serialize(%__MODULE__{address: address, action: action, args: args}) do
     actual_action = action || ""
-    actual_args = args || []
+    actual_args = args || %{}
 
-    serialized_args_list = Enum.map(actual_args, &TypedEncoding.serialize/1)
-    serialized_args_binary = :erlang.list_to_binary(serialized_args_list)
+    serialized_args_binary = TypedEncoding.serialize(actual_args)
 
-    <<1::8, address::binary, byte_size(actual_action)::8, actual_action::binary, length(actual_args)::8, serialized_args_binary::binary>>
+    <<1::8, address::binary, byte_size(actual_action)::8, actual_action::binary, serialized_args_binary::binary>>
   end
 
   @doc """
