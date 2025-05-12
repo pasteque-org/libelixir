@@ -29,6 +29,13 @@ defmodule ArchethicClient.Crypto do
   @type versioned_hash :: <<_::8, _::_*8>>
 
   @typedoc """
+  Binary representing a hash prepend by two bytes
+  - first byte to identify the curve type
+  - second byte to identify hash algorithm of the generated hash
+  """
+  @type prepended_hash :: <<_::16, _::_*8>>
+
+  @typedoc """
   Binary representing an address
   - first byte to identify the curve type
   - second byte to identify hash algorithm of the generated hash
@@ -238,7 +245,7 @@ defmodule ArchethicClient.Crypto do
       ...>     143, 78, 201, 109, 157, 196, 108, 109, 155, 91, 239, 118, 23, 100, 161, 195, 39, 117,
       ...>     148, 223, 182, 23, 1, 197, 205, 93, 239, 19, 27, 248, 168, 107, 40, 0, 68, 224, 177,
       ...>     110, 180, 24>>
-      ...> 
+      ...>
       ...> {_pub, pv} = Crypto.generate_deterministic_keypair("myseed")
       ...> ArchethicClient.Crypto.ec_decrypt!(cipher, pv)
       "myfakedata"
@@ -250,7 +257,7 @@ defmodule ArchethicClient.Crypto do
       ...>     143, 78, 201, 109, 157, 196, 108, 109, 155, 91, 239, 118, 23, 100, 161, 195, 39, 117,
       ...>     148, 223, 182, 23, 1, 197, 205, 93, 239, 19, 27, 248, 168, 107, 40, 0, 68, 224, 177,
       ...>     110, 180, 24>>
-      ...> 
+      ...>
       ...> {_, pv} = Crypto.generate_deterministic_keypair("otherseed")
       ...> Crypto.ec_decrypt!(cipher, pv)
       ** (RuntimeError) Decryption failed
@@ -272,7 +279,7 @@ defmodule ArchethicClient.Crypto do
       ...>     143, 78, 201, 109, 157, 196, 108, 109, 155, 91, 239, 118, 23, 100, 161, 195, 39, 117,
       ...>     148, 223, 182, 23, 1, 197, 205, 93, 239, 19, 27, 248, 168, 107, 40, 0, 68, 224, 177,
       ...>     110, 180, 24>>
-      ...> 
+      ...>
       ...> {_pub, pv} = Crypto.generate_deterministic_keypair("myseed")
       ...> {:ok, "myfakedata"} = Crypto.ec_decrypt(cipher, pv)
 
@@ -283,7 +290,7 @@ defmodule ArchethicClient.Crypto do
       ...>     143, 78, 201, 109, 157, 196, 108, 109, 155, 91, 239, 118, 23, 100, 161, 195, 39, 117,
       ...>     148, 223, 182, 23, 1, 197, 205, 93, 239, 19, 27, 248, 168, 107, 40, 0, 68, 224, 177,
       ...>     110, 180, 24>>
-      ...> 
+      ...>
       ...> {_, pv} = Crypto.generate_deterministic_keypair("otherseed")
       ...> Crypto.ec_decrypt(cipher, pv)
       {:error, :decryption_failed}
@@ -337,7 +344,7 @@ defmodule ArchethicClient.Crypto do
       iex> key =
       ...>   <<234, 210, 202, 129, 91, 76, 68, 14, 17, 212, 197, 49, 66, 168, 52, 111, 176, 182,
       ...>     227, 156, 5, 32, 24, 105, 41, 152, 67, 191, 187, 209, 101, 36>>
-      ...> 
+      ...>
       ...> ciphertext = Crypto.aes_encrypt("sensitive data", key)
       ...> Crypto.aes_decrypt(ciphertext, key)
       {:ok, "sensitive data"}
@@ -366,7 +373,7 @@ defmodule ArchethicClient.Crypto do
       iex> key =
       ...>   <<234, 210, 202, 129, 91, 76, 68, 14, 17, 212, 197, 49, 66, 168, 52, 111, 176, 182,
       ...>     227, 156, 5, 32, 24, 105, 41, 152, 67, 191, 187, 209, 101, 36>>
-      ...> 
+      ...>
       ...> ciphertext = Crypto.aes_encrypt("sensitive data", key)
       ...> Crypto.aes_decrypt!(ciphertext, key)
       "sensitive data"

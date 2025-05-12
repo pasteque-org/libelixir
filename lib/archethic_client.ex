@@ -11,6 +11,7 @@ defmodule ArchethicClient do
   alias ArchethicClient.Crypto
   alias ArchethicClient.Graphql
   alias ArchethicClient.GraphqlError
+  alias ArchethicClient.RealAsyncHelper
   alias ArchethicClient.Request
   alias ArchethicClient.RequestHelper
   alias ArchethicClient.Subscription
@@ -18,29 +19,19 @@ defmodule ArchethicClient do
   alias ArchethicClient.Transaction
   alias ArchethicClient.ValidationError
 
-  # Get the real async helper module from config or use default
-  defp async_helper_module,
-    do: Application.get_env(:archethic_client, :async_helper_module, ArchethicClient.RealAsyncHelper)
-
   @tx_validation_timeout 60_000
-
-  # Get the API module from config or use default
-  defp api_module, do: Application.get_env(:archethic_client, :api_module, API)
-
-  # Get the RequestHelper module from config or use default
-  defp request_helper_module, do: Application.get_env(:archethic_client, :request_helper_module, RequestHelper)
 
   @doc """
   Send a request to Archethic network
   """
   @spec request(request :: Request.t(), opts :: API.request_opts()) :: {:ok, term()} | {:error, Exception.t()}
-  def request(request, opts \\ []), do: api_module().request(request, opts)
+  def request(request, opts \\ []), do: API.request(request, opts)
 
   @doc """
   Same as request/2 but raise on error
   """
   @spec request!(request :: Request.t(), opts :: API.request_opts()) :: term()
-  def request!(request, opts \\ []), do: api_module().request!(request, opts)
+  def request!(request, opts \\ []), do: API.request!(request, opts)
 
   @doc """
   Batch multiple Request into a single request per Request type
@@ -48,13 +39,13 @@ defmodule ArchethicClient do
   """
   @spec batch_requests(requests :: list(Request.t()), opts :: API.request_opts()) ::
           list({:ok, term()} | {:error, Exception.t()})
-  def batch_requests(requests, opts \\ []), do: api_module().batch_requests(requests, opts)
+  def batch_requests(requests, opts \\ []), do: API.batch_requests(requests, opts)
 
   @doc """
   Same as batch_requests/2 but raise on error
   """
   @spec batch_requests!(requests :: list(Request.t()), opts :: API.request_opts()) :: list(term())
-  def batch_requests!(requests, opts \\ []), do: api_module().batch_requests!(requests, opts)
+  def batch_requests!(requests, opts \\ []), do: API.batch_requests!(requests, opts)
 
   @doc """
   Returns the balance of a genesis address
@@ -64,7 +55,7 @@ defmodule ArchethicClient do
           {:ok, map()} | {:error, Exception.t()}
   def get_balance(genesis_address, opts \\ []) do
     genesis_address
-    |> request_helper_module().get_balance()
+    |> RequestHelper.get_balance()
     |> request(opts)
   end
 
@@ -74,7 +65,7 @@ defmodule ArchethicClient do
   @spec get_balance!(genesis_address :: Crypto.hex_address(), opts :: API.request_opts()) :: map()
   def get_balance!(genesis_address, opts \\ []) do
     genesis_address
-    |> request_helper_module().get_balance()
+    |> RequestHelper.get_balance()
     |> request!(opts)
   end
 
@@ -93,7 +84,7 @@ defmodule ArchethicClient do
     {contract_function_call_opts, request_opts} = Keyword.split(opts, [:resolve_last?])
 
     contract_address
-    |> request_helper_module().contract_function_call(function, args, contract_function_call_opts)
+    |> RequestHelper.contract_function_call(function, args, contract_function_call_opts)
     |> request(request_opts)
   end
 
@@ -111,7 +102,7 @@ defmodule ArchethicClient do
     {contract_function_call_opts, request_opts} = Keyword.split(opts, [:resolve_last?])
 
     contract_address
-    |> request_helper_module().contract_function_call(function, args, contract_function_call_opts)
+    |> RequestHelper.contract_function_call(function, args, contract_function_call_opts)
     |> request!(request_opts)
   end
 
@@ -130,6 +121,7 @@ defmodule ArchethicClient do
     end
   end
 
+  @spec get_chain_index!(binary()) :: non_neg_integer()
   @doc """
   Same as `get_chain_index/2` but raise on error
   """
@@ -148,17 +140,17 @@ defmodule ArchethicClient do
           :ok | {:error, Exception.t() | :timeout}
   def send_transaction(%Transaction{address: address} = transaction, opts \\ []) do
     address_hex = Base.encode16(address)
-    confirmed_sub = request_helper_module().subscribe_transaction_confirmed(address_hex)
-    error_sub = request_helper_module().subscribe_transaction_error(address_hex)
+    confirmed_sub = RequestHelper.subscribe_transaction_confirmed(address_hex)
+    error_sub = RequestHelper.subscribe_transaction_error(address_hex)
 
     # Runs in a task to close web socket after transaction validation
     task =
-      async_helper_module().async_nolink(TaskSupervisor, fn ->
+      RealAsyncHelper.async_nolink(TaskSupervisor, fn ->
         opts = Keyword.put(opts, :parent, self())
 
         subscriptions =
           TaskSupervisor
-          |> async_helper_module().async_stream_nolink([confirmed_sub, error_sub], &api_module().subscribe(&1, opts),
+          |> RealAsyncHelper.async_stream_nolink([confirmed_sub, error_sub], &API.subscribe(&1, opts),
             on_timeout: :kill_task
           )
           |> Enum.map(fn
@@ -175,8 +167,8 @@ defmodule ArchethicClient do
         end
       end)
 
-    case async_helper_module().yield(task, @tx_validation_timeout * 2) ||
-           async_helper_module().shutdown(task, :brutal_kill) do
+    case RealAsyncHelper.yield(task, @tx_validation_timeout * 2) ||
+           RealAsyncHelper.shutdown(task, :brutal_kill) do
       {:ok, res} -> res
       {:exit, reason} -> {:error, reason}
       nil -> {:error, :timeout}
@@ -188,7 +180,7 @@ defmodule ArchethicClient do
   # Returns :ok if the transaction is confirmed,
   # {:error, reason} if an error occurs or if the validation times out.
   defp send_tx_and_await_validation(transaction, opts, confirmed_ref, error_ref) do
-    case transaction |> request_helper_module().send_transaction() |> request(opts) do
+    case transaction |> RequestHelper.send_transaction() |> request(opts) do
       {:ok, _} ->
         receive do
           %Subscription{ref: ^confirmed_ref} -> :ok
