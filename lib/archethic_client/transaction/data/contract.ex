@@ -52,7 +52,7 @@ defmodule ArchethicClient.TransactionData.Contract do
       bytecode: Base.encode16(bytecode),
       manifest: %{
         abi: %{functions: functions, state: state},
-        upgrade_opts: upgrade_opts
+        upgradeOpts: upgrade_opts
       }
     }
   end

@@ -104,9 +104,9 @@ defmodule ArchethicClient.TransactionData do
   @doc """
   Add a recipient to a transaction
   """
-  @spec add_recipient(data :: t(), to :: Crypto.address(), action :: String.t(), args :: list()) :: t()
-  def add_recipient(%__MODULE__{recipients: recipients} = data, to, action, args \\ [])
-      when is_binary(to) and is_binary(action) and is_list(args) do
+  @spec add_recipient(data :: t(), to :: Crypto.address(), action :: String.t(), args :: map()) :: t()
+  def add_recipient(%__MODULE__{recipients: recipients} = data, to, action, args \\ %{})
+      when is_binary(to) and is_binary(action) and is_map(args) do
     recipient = %Recipient{address: to, action: action, args: args}
     %__MODULE__{data | recipients: [recipient | recipients]}
   end
