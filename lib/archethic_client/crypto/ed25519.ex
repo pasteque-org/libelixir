@@ -3,9 +3,7 @@ defmodule ArchethicClient.Crypto.Ed25519 do
 
   import Bitwise
 
-  @p 57_896_044_618_658_097_711_785_492_504_343_953_926_634_992_332_820_282_019_728_792_003_956_564_819_949
-  @d -4_513_249_062_541_557_337_682_894_930_092_624_173_785_641_285_191_125_241_628_941_591_882_900_924_598_840_740
-  @i 19_681_161_376_707_505_956_807_079_304_988_542_015_446_066_515_923_890_162_744_021_073_123_829_784_752
+  @p 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED
 
   @doc """
   Generate an Ed25519 key pair
@@ -37,81 +35,99 @@ defmodule ArchethicClient.Crypto.Ed25519 do
   def verify?(<<public_key::binary-32>>, data, sig) when (is_binary(data) or is_list(data)) and is_binary(sig),
     do: :crypto.verify(:eddsa, :sha512, data, sig, [public_key, :ed25519])
 
-  @spec convert_to_x25519_private_key(ed25519_seed :: binary()) :: binary()
-  def convert_to_x25519_private_key(ed25519_seed) when byte_size(ed25519_seed) == 32 do
-    # ed25519_seed is the 32-byte private seed key for Ed25519.
-    # The X25519 private key is derived from the first 32 bytes of SHA512(ed25519_seed),
-    # interpreted as a little-endian integer, then clamped, and encoded back to
-    # a 32-byte little-endian binary.
-    hashed_seed = :crypto.hash(:sha512, ed25519_seed) # 64-byte binary
+  @doc """
+  Converts an Ed25519 private key to an X25519 private key.
 
-    # Extract the first 32 bytes and interpret as a little-endian integer.
-    <<scalar_to_clamp::little-integer-size(256), _rest_of_hash::binary-size(32)>> = hashed_seed
+  This function takes a 32-byte Ed25519 private key and converts it to a format
+  suitable for use with X25519 (Curve25519) key exchange. The conversion follows
+  the standard process of:
 
-    clamped_scalar_integer = clamp(scalar_to_clamp)
+  1. Hashing the Ed25519 private key with SHA-512
+  2. Taking the first 32 bytes of the hash
+  3. Applying Curve25519 key clamping to the result
 
-    # Encode the clamped integer back to a 32-byte little-endian binary.
-    <<clamped_scalar_integer::little-integer-size(256)>>
+  The key clamping performs the following bit operations:
+  - Clears the lower 3 bits of the first byte
+  - Clears the highest bit of the last byte
+  - Sets the second highest bit of the last byte
+
+  ## Parameters
+    - `ed25519_private_key`: A 32-byte binary representing the Ed25519 private key
+
+  ## Returns
+    A 32-byte binary representing the X25519 private key
+
+  ## Examples
+      iex> ed25519_key =
+      ...>   Base.decode16!("F6FA87586DB70F6FDE9BEEE377E2E68F4678D71231969976266155172B1F6C0F")
+      ...> 
+      ...> Ed25519.convert_to_x25519_private_key(ed25519_key) |> Base.encode16()
+      "C8CE0F2836A8D1D294E185E8A6E20B445192831DC6DD4139090FA7D5DE0F9F67"
+  """
+  @spec convert_to_x25519_private_key(ed25519_private_key :: binary()) :: binary()
+  def convert_to_x25519_private_key(ed25519_private_key) when byte_size(ed25519_private_key) == 32 do
+    :sha512
+    |> :crypto.hash(ed25519_private_key)
+    |> :binary.part(0, 32)
+    |> clamp_curve25519_key()
   end
 
+  # Curve25519 key clamping (constant-time bit operations)
+  defp clamp_curve25519_key(<<first::8, middle::bytes-size(30), last::8>>) do
+    clamped = <<first &&& 0b11111000>> <> middle <> <<(last &&& 0b00111111) ||| 0b01000000>>
+    # Copy binary to reduce memory dump exposure
+    :binary.copy(clamped)
+  end
+
+  @doc """
+  Converts an Ed25519 public key to an X25519 public key.
+
+  This function performs a mathematical transformation to convert a point on the Ed25519
+  curve to a point on the X25519 (Curve25519) curve. The conversion follows the standard
+  process of:
+
+  1. Extracts the y-coordinate from the Ed25519 public key (clearing the sign bit)
+  2. Computes the Montgomery u-coordinate using the formula: 
+     `u = (1 + y) / (1 - y) mod p`
+     where `p = 2^255 - 19` (the Curve25519 prime field order)
+  3. Handles modular arithmetic with proper inversion using Fermat's Little Theorem
+  4. Encodes the result as a little-endian 256-bit integer
+
+  ## Parameters
+    - `ed25519_public_key`: A 32-byte binary representing the Ed25519 public key
+
+  ## Returns
+    A 32-byte binary representing the X25519 public key
+
+  ## Examples
+      iex> ed25519_pub =
+      ...>   Base.decode16!("D75A980182B10AB7D54BFED3C964073A0EE172F3DAA62325AF021A68F707511A")
+      ...> 
+      ...> Ed25519.convert_to_x25519_public_key(ed25519_pub) |> Base.encode16()
+      "D85E07EC22B0AD881537C2F44D662D1A143CF830C57ACA4305D85C7A90F6B62E"
+  """
   @spec convert_to_x25519_public_key(ed25519_public_key :: binary()) :: binary()
-  def convert_to_x25519_public_key(ed25519_public_key) do
-    {_, y} = decodepoint(ed25519_public_key)
-    u = mod((1 + y) * inv(1 - y), @p)
-    <<u::little-size(256)>>
+  def convert_to_x25519_public_key(ed25519_public_key) when byte_size(ed25519_public_key) == 32 do
+    # Extract y-coordinate (clearing sign bit)
+    <<y_bytes::binary-size(31), last_byte>> = ed25519_public_key
+    y = :binary.decode_unsigned(y_bytes <> <<last_byte &&& 0x7F>>, :little)
+
+    # Compute u = (1 + y) / (1 - y) mod p (using non-negative mod)
+    numerator = Integer.mod(1 + y, @p)
+    denominator = Integer.mod(1 - y, @p)
+    inv_denominator = mod_pow(denominator, @p - 2, @p)
+    u = Integer.mod(numerator * inv_denominator, @p)
+
+    # Encode as X25519 key
+    <<u::little-unsigned-integer-size(256)>>
   end
 
-  defp clamp(c), do: c |> band(~~~7) |> band(~~~(128 <<< (8 * 31))) |> bor(64 <<< (8 * 31))
+  # Fixed modular exponentiation with non-negative inputs
+  defp mod_pow(base, exp, mod) when base >= 0 and mod > 0 do
+    base_bin = :binary.encode_unsigned(base)
+    exp_bin = :binary.encode_unsigned(exp)
+    mod_bin = :binary.encode_unsigned(mod)
 
-  defp decodepoint(<<n::little-size(256)>>) do
-    xc = bsr(n, 255)
-    y = band(n, 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-    x = xrecover(y)
-
-    point =
-      case x &&& 1 do
-        ^xc -> {x, y}
-        _ -> {@p - x, y}
-      end
-
-    if isoncurve(point), do: point, else: raise("Point off Edwards curve")
+    base_bin |> :crypto.mod_pow(exp_bin, mod_bin) |> :binary.decode_unsigned()
   end
-
-  defp decodepoint(_), do: raise("Provided value not a key")
-
-  defp xrecover(y) do
-    xx = (y * y - 1) * inv(@d * y * y + 1)
-    x = expmod(xx, div(@p + 3, 8), @p)
-
-    x =
-      case mod(x * x - xx, @p) do
-        0 -> x
-        _ -> mod(x * @i, @p)
-      end
-
-    case mod(x, 2) do
-      0 -> @p - x
-      _ -> x
-    end
-  end
-
-  defp mod(x, _y) when x == 0, do: 0
-  defp mod(x, y) when x > 0, do: rem(x, y)
-  defp mod(x, y) when x < 0, do: rem(y + rem(x, y), y)
-
-  defp inv(x), do: expmod(x, @p - 2, @p)
-
-  defp expmod(b, e, m) when b > 0, do: b |> :crypto.mod_pow(e, m) |> :binary.decode_unsigned()
-
-  defp expmod(b, e, m) do
-    i = b |> abs() |> :crypto.mod_pow(e, m) |> :binary.decode_unsigned()
-
-    cond do
-      mod(e, 2) == 0 -> i
-      i == 0 -> i
-      true -> m - i
-    end
-  end
-
-  defp isoncurve({x, y}), do: mod(-x * x + y * y - 1 - @d * x * x * y * y, @p) == 0
 end

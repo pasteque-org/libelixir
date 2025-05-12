@@ -5,6 +5,8 @@ defmodule ArchethicClient.CryptoTest do
   # For checking key prefixes
   alias ArchethicClient.Crypto.ID
 
+  doctest Crypto
+
   describe "generate_deterministic_keypair/2" do
     test "generates different keys for different seeds (default options)" do
       {pub1, priv1} = Crypto.generate_deterministic_keypair("seed1")

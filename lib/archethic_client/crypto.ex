@@ -97,7 +97,7 @@ defmodule ArchethicClient.Crypto do
       ...> pub != pub10 and pub == pub_bis
       true
 
-      iex> {pub, _} = Crypto.derive_keypair("myseed", curve: :ed25519, origin: :on_chain_wallet)
+      iex> {pub, _} = Crypto.derive_keypair("myseed", 1, curve: :ed25519, origin: :on_chain_wallet)
       ...> <<curve_id::8, origin_id::8, _::binary>> = pub
       ...> origin_id == 0 and curve_id == 0
       true
