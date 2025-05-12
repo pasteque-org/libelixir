@@ -96,6 +96,7 @@ defmodule ArchethicClient.TransactionData.Ownership do
   def serialize(%__MODULE__{secret: secret, authorized_keys: authorized_keys}) do
     authorized_keys_bin =
       authorized_keys
+      |> Enum.sort_by(&elem(&1, 0))
       |> Enum.map(fn {public_key, encrypted_key} -> <<public_key::binary, encrypted_key::binary>> end)
       |> :erlang.list_to_binary()
 
@@ -106,9 +107,14 @@ defmodule ArchethicClient.TransactionData.Ownership do
 
   @spec to_map(ownership :: t()) :: map()
   def to_map(%__MODULE__{secret: secret, authorized_keys: authorized_keys}) do
+    mapped_authorized_keys =
+      authorized_keys
+      |> Enum.sort_by(&elem(&1, 0))
+      |> Enum.map(fn {pub, key} -> %{publicKey: Base.encode16(pub), encryptedSecretKey: Base.encode16(key)} end)
+
     %{
       secret: Base.encode16(secret),
-      authorizedKeys: Map.new(authorized_keys, fn {pub, key} -> {Base.encode16(pub), Base.encode16(key)} end)
+      authorizedKeys: mapped_authorized_keys
     }
   end
 end
