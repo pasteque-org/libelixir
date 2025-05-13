@@ -20,7 +20,7 @@ defmodule ArchethicClient.Graphql do
           fields: list(field :: atom() | {type :: atom(), fields :: list()})
         }
 
-  defimpl String.Chars, for: __MODULE__ do
+  defimpl String.Chars, for: ArchethicClient.Graphql do
     alias ArchethicClient.Graphql
 
     @doc """
