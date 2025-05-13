@@ -185,7 +185,7 @@ defmodule ArchethicClient.API do
     results = batch_requests(requests, opts)
 
     case Enum.find(results, &match?({:error, _}, &1)) do
-      nil -> results
+      nil -> Enum.map(results, &elem(&1, 1))
       {:error, reason} -> raise reason
     end
   end
