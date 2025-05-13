@@ -11,7 +11,6 @@ defmodule ArchethicClient do
   alias ArchethicClient.Crypto
   alias ArchethicClient.Graphql
   alias ArchethicClient.GraphqlError
-  alias ArchethicClient.RealAsyncHelper
   alias ArchethicClient.Request
   alias ArchethicClient.RequestHelper
   alias ArchethicClient.Subscription
@@ -145,12 +144,12 @@ defmodule ArchethicClient do
 
     # Runs in a task to close web socket after transaction validation
     task =
-      RealAsyncHelper.async_nolink(TaskSupervisor, fn ->
+      Task.Supervisor.async_nolink(TaskSupervisor, fn ->
         opts = Keyword.put(opts, :parent, self())
 
         subscriptions =
           TaskSupervisor
-          |> RealAsyncHelper.async_stream_nolink([confirmed_sub, error_sub], &API.subscribe(&1, opts),
+          |> Task.Supervisor.async_stream_nolink([confirmed_sub, error_sub], &API.subscribe(&1, opts),
             on_timeout: :kill_task
           )
           |> Enum.map(fn
@@ -167,8 +166,8 @@ defmodule ArchethicClient do
         end
       end)
 
-    case RealAsyncHelper.yield(task, @tx_validation_timeout * 2) ||
-           RealAsyncHelper.shutdown(task, :brutal_kill) do
+    case Task.yield(task, @tx_validation_timeout * 2) ||
+           Task.shutdown(task, :brutal_kill) do
       {:ok, res} -> res
       {:exit, reason} -> {:error, reason}
       nil -> {:error, :timeout}

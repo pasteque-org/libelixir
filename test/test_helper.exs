@@ -10,4 +10,3 @@ Mox.defmock(ArchethicClient.AsyncHelperMock, for: ArchethicClient.Test.Behaviors
 # Configure stubs globally
 Mox.stub_with(ArchethicClient.APIMock, ArchethicClient.API)
 Mox.stub_with(ArchethicClient.RequestHelperMock, ArchethicClient.RequestHelper)
-Mox.stub_with(ArchethicClient.AsyncHelperMock, ArchethicClient.RealAsyncHelper)
