@@ -59,7 +59,7 @@ defmodule ArchethicClient.TransactionData.Ownership do
   @spec new(secret :: binary(), authorized_keys :: list(Crypto.key()), secret_key :: binary()) :: t()
   def new(secret, authorized_keys, secret_key \\ :crypto.strong_rand_bytes(32)) do
     %__MODULE__{
-      secret: secret,
+      secret: Crypto.aes_encrypt(secret, secret_key),
       authorized_keys:
         Map.new(authorized_keys, fn public_key -> {public_key, Crypto.ec_encrypt(secret_key, public_key)} end)
     }
