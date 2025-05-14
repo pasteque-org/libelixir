@@ -40,20 +40,9 @@ defmodule ArchethicClient.TransactionData.Contract do
   def to_map(nil), do: nil
 
   def to_map(%__MODULE__{bytecode: bytecode, manifest: manifest}) do
-    %{"functions" => functions, "state" => state} = Map.get(manifest, "abi")
-
-    upgrade_opts =
-      case Map.get(manifest, "upgradeOpts") do
-        %{"from" => from} -> %{from: from}
-        nil -> nil
-      end
-
     %{
       bytecode: Base.encode16(bytecode),
-      manifest: %{
-        abi: %{functions: functions, state: state},
-        upgradeOpts: upgrade_opts
-      }
+      manifest: manifest
     }
   end
 end
