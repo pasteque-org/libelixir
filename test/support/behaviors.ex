@@ -28,7 +28,7 @@ defmodule ArchethicClient.Test.Behaviors do
     @callback contract_function_call(
                 ArchethicClient.Crypto.hex_address(),
                 String.t(),
-                list(),
+                map(),
                 keyword()
               ) :: ArchethicClient.Request.t()
     @callback send_transaction(ArchethicClient.Transaction.t()) :: ArchethicClient.Request.t()
