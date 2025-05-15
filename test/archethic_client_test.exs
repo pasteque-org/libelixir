@@ -8,5 +8,4 @@ defmodule ArchethicClientTest do
   doctest ArchethicClient.TransactionData.Ownership
   doctest ArchethicClient.TransactionData.Ledger.TokenLedger.Transfer
   doctest ArchethicClient.TransactionData.Ledger.UCOLedger.Transfer
-
 end
