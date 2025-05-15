@@ -75,10 +75,10 @@ defmodule ArchethicClient do
   @spec call_contract_function(
           contract_address :: Crypto.hex_address(),
           function :: String.t(),
-          args :: list(),
+          args :: map(),
           opts :: API.request_opts()
         ) :: {:ok, term()} | {:error, Exception.t()}
-  def call_contract_function(contract_address, function, args \\ [], opts \\ []) do
+  def call_contract_function(contract_address, function, args \\ %{}, opts \\ []) do
     # Extract any contract function call options (like resolve_last?) and API request options
     {contract_function_call_opts, request_opts} = Keyword.split(opts, [:resolve_last?])
 
@@ -93,10 +93,10 @@ defmodule ArchethicClient do
   @spec call_contract_function!(
           contract_address :: Crypto.hex_address(),
           function :: String.t(),
-          args :: list(),
+          args :: map(),
           opts :: API.request_opts()
         ) :: term()
-  def call_contract_function!(contract_address, function, args \\ [], opts \\ []) do
+  def call_contract_function!(contract_address, function, args \\ %{}, opts \\ []) do
     # Extract any contract function call options (like resolve_last?) and API request options
     {contract_function_call_opts, request_opts} = Keyword.split(opts, [:resolve_last?])
 

@@ -42,10 +42,10 @@ defmodule ArchethicClient.RequestHelper do
   @spec contract_function_call(
           address :: Crypto.hex_address(),
           function :: String.t(),
-          args :: list(),
+          args :: map(),
           opts :: contract_fun_opts()
         ) :: Request.t(RPC)
-  def contract_function_call(address, function, args \\ [], opts \\ []) do
+  def contract_function_call(address, function, args \\ %{}, opts \\ []) do
     Keyword.validate!(opts, [:resolve_last?])
 
     params = %{
