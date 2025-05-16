@@ -1,6 +1,10 @@
 defmodule ArchethicClient.API do
   @moduledoc """
-  Main functions to execute requests to Archethic network
+  Provides functions for sending requests to the Archethic network.
+
+  This module handles single requests, batch requests, and subscriptions
+  to network events. It also includes support for mock requests for testing
+  purposes.
   """
 
   alias ArchethicClient.API.SubscriptionSupervisor
@@ -173,7 +177,7 @@ defmodule ArchethicClient.API do
     results = batch_requests(requests, opts)
 
     case Enum.find(results, &match?({:error, _}, &1)) do
-      nil -> results
+      nil -> Enum.map(results, &elem(&1, 1))
       {:error, reason} -> raise reason
     end
   end

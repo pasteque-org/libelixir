@@ -1,6 +1,10 @@
 defmodule ArchethicClient do
   @moduledoc """
-  Documentation for `ArchethicClient`.
+  The main module for the ArchethicClient library.
+
+  This module provides the primary API for interacting with the Archethic
+  blockchain. It offers functions to send requests, manage transactions,
+  query balances, and interact with smart contracts.
   """
 
   alias ArchethicClient.API
@@ -63,11 +67,16 @@ defmodule ArchethicClient do
   @spec call_contract_function(
           contract_address :: Crypto.hex_address(),
           function :: String.t(),
-          args :: list(),
+          args :: map(),
           opts :: API.request_opts()
         ) :: {:ok, term()} | {:error, Exception.t()}
-  def call_contract_function(contract_address, function, args \\ [], opts \\ []),
-    do: contract_address |> RequestHelper.contract_function_call(function, args) |> request(opts)
+  def call_contract_function(contract_address, function, args \\ %{}, opts \\ []) do
+    {contract_function_call_opts, request_opts} = Keyword.split(opts, [:resolve_last?])
+
+    contract_address
+    |> RequestHelper.contract_function_call(function, args, contract_function_call_opts)
+    |> request(request_opts)
+  end
 
   @doc """
   Same as `call_contract_function/4` but raise on error
@@ -75,11 +84,17 @@ defmodule ArchethicClient do
   @spec call_contract_function!(
           contract_address :: Crypto.hex_address(),
           function :: String.t(),
-          args :: list(),
+          args :: map(),
           opts :: API.request_opts()
         ) :: term()
-  def call_contract_function!(contract_address, function, args \\ [], opts \\ []),
-    do: contract_address |> RequestHelper.contract_function_call(function, args) |> request!(opts)
+  def call_contract_function!(contract_address, function, args \\ %{}, opts \\ []) do
+    # Extract any contract function call options (like resolve_last?) and API request options
+    {contract_function_call_opts, request_opts} = Keyword.split(opts, [:resolve_last?])
+
+    contract_address
+    |> RequestHelper.contract_function_call(function, args, contract_function_call_opts)
+    |> request!(request_opts)
+  end
 
   @doc """
   Returns the index of a chain
@@ -148,6 +163,10 @@ defmodule ArchethicClient do
     end
   end
 
+  # Sends the transaction and waits for a confirmation or error message
+  # from the network via subscriptions.
+  # Returns :ok if the transaction is confirmed,
+  # {:error, reason} if an error occurs or if the validation times out.
   defp send_tx_and_await_validation(transaction, opts, confirmed_ref, error_ref) do
     case transaction |> RequestHelper.send_transaction() |> request(opts) do
       {:ok, _} ->

@@ -1,15 +1,17 @@
 defmodule ArchethicClient.Transaction do
   @moduledoc """
-  Represents the main unit of the Archethic network and its Transaction Chain.
+  Defines the structure and functions for creating Archethic transactions.
 
-  Blocks are reduce to its unitary form to provide high scalability, avoiding double spending attack and chain integrity
+  A transaction is the fundamental unit of change on the Archethic network.
+  This module provides tools to build various transaction types, sign them,
+  and serialize them for network transmission.
   """
 
   alias ArchethicClient.API
   alias ArchethicClient.Crypto
   alias ArchethicClient.TransactionData
 
-  @version 3
+  @version 4
 
   defstruct [
     :address,
@@ -23,13 +25,6 @@ defmodule ArchethicClient.Transaction do
 
   @typedoc """
   Represent a transaction in pending validation
-  - Address: hash of the new generated public key for the given transaction
-  - Type: transaction type
-  - Data: transaction data zone (identity, keychain, smart contract, etc.)
-  - Previous signature: signature from the previous public key
-  - Previous public key: previous generated public key matching the previous signature
-  - Origin signature: signature from the device which originated the transaction (used in the Proof of work)
-  - Version: version of the transaction (used for backward compatiblity)
   """
   @type t() :: %__MODULE__{
           address: Crypto.address(),
@@ -97,7 +92,7 @@ defmodule ArchethicClient.Transaction do
   end
 
   @doc """
-  Return the payload for the previous signature
+  Generates the binary payload that needs to be signed by the previous private key.
   """
   @spec previous_signature_payload(
           data :: TransactionData.t(),
@@ -122,6 +117,12 @@ defmodule ArchethicClient.Transaction do
       previous_public_key::binary, byte_size(previous_signature)::8, previous_signature::binary>>
   end
 
+  @doc """
+  Converts a transaction struct into a map representation.
+
+  The binary fields like address, public key, and signatures are hex-encoded.
+  The transaction type atom is converted to a string.
+  """
   @spec to_map(transaction :: t()) :: map()
   def to_map(%__MODULE__{} = tx) do
     %{

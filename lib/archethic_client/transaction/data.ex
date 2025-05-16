@@ -1,8 +1,19 @@
 defmodule ArchethicClient.TransactionData do
   @moduledoc """
-  Represents any transaction data block
+  Defines the structure and functions for managing the data payload of an Archethic transaction.
+
+  The `TransactionData` struct can contain various types of information, including:
+  - Ledger: asset transfers
+  - Contract: web assembly smart contract code
+  - Content: free zone for data hosting (string or hexadecimal)
+  - Ownership: authorization/delegations containing list of secrets and their authorized public keys to proof the ownership
+  - Recipients: For non asset transfers, the list of recipients of the transaction (e.g Smart contract interactions)
+
+  This module provides functions to build up the transaction data, serialize it for inclusion
+  in a transaction, and convert it to a map representation.
   """
 
+  alias __MODULE__.Contract
   alias __MODULE__.Ledger
   alias __MODULE__.Ledger.TokenLedger.Transfer, as: TokenTransfer
   alias __MODULE__.Ledger.UCOLedger.Transfer, as: UCOTransfer
@@ -11,35 +22,36 @@ defmodule ArchethicClient.TransactionData do
   alias ArchethicClient.Crypto
   alias ArchethicClient.Utils.VarInt
 
-  defstruct recipients: [], ledger: %Ledger{}, code: "", ownerships: [], content: ""
+  defstruct recipients: [], ledger: %Ledger{}, ownerships: [], content: "", contract: nil
 
   @typedoc """
   Transaction data is composed from:
-  - Recipients: list of recipients for smart contract interactions
-  - Ledger: Movement operations on UCO TOKEN or Stock ledger
-  - Code: Contains the smart contract code including triggers, conditions and actions
-  - Ownerships: List of the authorizations and delegations to proof ownership of secrets
-  - Content: Free content to store any data as binary
+  - Recipients: For non asset transfers, the list of recipients of the transaction (e.g Smart contract interactions)
+  - Ledger: asset transfers
+  - Contract: web assembly smart contract code
+  - Ownership: authorization/delegations containing list of secrets and their authorized public keys to proof the ownership
+  - Content: free zone for data hosting (string or hexadecimal)
   """
   @type t :: %__MODULE__{
           recipients: list(Recipient.t()),
           ledger: Ledger.t(),
-          code: String.t(),
+          contract: nil | Contract.t(),
           ownerships: list(Ownership.t()),
           content: binary()
         }
 
   @doc """
-  Set the code of a transaction
-  """
-  @spec set_code(data :: t(), code :: String.t()) :: t()
-  def set_code(%__MODULE__{} = data, code) when is_binary(code), do: %__MODULE__{data | code: code}
-
-  @doc """
   Set the content of a transaction
   """
   @spec set_content(data :: t(), content :: binary()) :: t()
-  def set_content(%__MODULE__{} = data, content) when is_binary(content), do: %__MODULE__{data | content: content}
+  def set_content(%__MODULE__{} = data, content) when is_binary(content), do: %{data | content: content}
+
+  @doc """
+  Set the contract of a transaction. Accepts a Contract struct or nil.
+  """
+  @spec set_contract(data :: t(), contract :: Contract.t() | nil) :: t()
+  def set_contract(%__MODULE__{} = data, %Contract{} = contract), do: %{data | contract: contract}
+  def set_contract(%__MODULE__{} = data, nil), do: %{data | contract: nil}
 
   @doc """
   Add an ownership to a transaction
@@ -61,7 +73,7 @@ defmodule ArchethicClient.TransactionData do
       when is_binary(secret) and is_list(authorized_keys) and is_binary(secret_key) do
     ownership = Ownership.new(secret, authorized_keys, secret_key)
 
-    %__MODULE__{data | ownerships: ownerships ++ [ownership]}
+    %{data | ownerships: ownerships ++ [ownership]}
   end
 
   @doc """
@@ -92,11 +104,11 @@ defmodule ArchethicClient.TransactionData do
   @doc """
   Add a recipient to a transaction
   """
-  @spec add_recipient(data :: t(), to :: Crypto.address(), action :: String.t(), args :: list()) :: t()
-  def add_recipient(%__MODULE__{recipients: recipients} = data, to, action, args \\ [])
-      when is_binary(to) and is_binary(action) and is_list(args) do
+  @spec add_recipient(data :: t(), to :: Crypto.address(), action :: String.t(), args :: map()) :: t()
+  def add_recipient(%__MODULE__{recipients: recipients} = data, to, action, args \\ %{})
+      when is_binary(to) and is_binary(action) and is_map(args) do
     recipient = %Recipient{address: to, action: action, args: args}
-    %__MODULE__{data | recipients: [recipient | recipients]}
+    %{data | recipients: [recipient | recipients]}
   end
 
   @doc """
@@ -104,8 +116,8 @@ defmodule ArchethicClient.TransactionData do
   """
   @spec serialize(tx_data :: t()) :: binary()
   def serialize(%__MODULE__{
-        code: code,
         content: content,
+        contract: contract,
         ownerships: ownerships,
         ledger: ledger,
         recipients: recipients
@@ -114,17 +126,33 @@ defmodule ArchethicClient.TransactionData do
     recipients_bin = recipients |> Enum.map(&Recipient.serialize/1) |> :erlang.list_to_binary()
     encoded_ownership_len = ownerships |> length() |> VarInt.from_value()
     encoded_recipients_len = recipients |> length() |> VarInt.from_value()
+    contract_bin = serialize_contract_field(contract)
 
-    <<byte_size(code)::32, code::binary, byte_size(content)::32, content::binary, encoded_ownership_len::binary,
+    <<contract_bin::binary, byte_size(content)::32, content::binary, encoded_ownership_len::binary,
       ownerships_bin::binary, Ledger.serialize(ledger)::binary, encoded_recipients_len::binary,
       recipients_bin::binary>>
   end
 
+  defp serialize_contract_field(nil), do: <<0::8>>
+
+  defp serialize_contract_field(%Contract{} = contract) do
+    <<1::8, Contract.serialize(contract)::binary>>
+  end
+
+  @doc """
+  Converts `TransactionData` to a map representation.
+  """
   @spec to_map(data :: t()) :: map()
-  def to_map(%__MODULE__{content: content, code: code, ledger: ledger, ownerships: ownerships, recipients: recipients}) do
+  def to_map(%__MODULE__{
+        content: content,
+        ledger: ledger,
+        ownerships: ownerships,
+        recipients: recipients,
+        contract: contract
+      }) do
     %{
       content: content,
-      code: code,
+      contract: Contract.to_map(contract),
       ledger: Ledger.to_map(ledger),
       ownerships: Enum.map(ownerships, &Ownership.to_map/1),
       recipients: Enum.map(recipients, &Recipient.to_map/1)
