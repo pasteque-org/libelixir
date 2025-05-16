@@ -11,9 +11,6 @@ defmodule ArchethicClient.Transaction do
   alias ArchethicClient.Crypto
   alias ArchethicClient.TransactionData
 
-  @type serialization_mode :: :compact | :extended
-
-  # TODO: Check if this is the correct version
   @version 4
 
   defstruct [
@@ -28,13 +25,6 @@ defmodule ArchethicClient.Transaction do
 
   @typedoc """
   Represent a transaction in pending validation
-  - Address: hash of the new generated public key for the given transaction
-  - Type: transaction type
-  - Data: transaction data zone (identity, keychain, smart contract, etc.)
-  - Previous signature: signature from the previous public key
-  - Previous public key: previous generated public key matching the previous signature
-  - Origin signature: signature from the device which originated the transaction (used in the Proof of work)
-  - Version: version of the transaction (used for backward compatiblity)
   """
   @type t() :: %__MODULE__{
           address: Crypto.address(),
@@ -103,9 +93,6 @@ defmodule ArchethicClient.Transaction do
 
   @doc """
   Generates the binary payload that needs to be signed by the previous private key.
-
-  This payload includes the transaction version, the new transaction address,
-  the serialized transaction type, and the serialized transaction data.
   """
   @spec previous_signature_payload(
           data :: TransactionData.t(),

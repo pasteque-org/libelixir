@@ -34,8 +34,6 @@ defmodule ArchethicClient.API do
     end
   end
 
-  # Internal helper to perform a standard HTTP request to the Archethic network.
-  # It constructs the request using Req and formats the response.
   defp do_request(request, opts) do
     base_url =
       opts
@@ -55,8 +53,6 @@ defmodule ArchethicClient.API do
     end
   end
 
-  # Internal helper to perform a mock request for testing.
-  # It uses Req.Test to simulate network responses.
   defp do_mock_request(request) do
     req =
       [base_url: "http://localhost:4000"]
@@ -186,8 +182,6 @@ defmodule ArchethicClient.API do
     end
   end
 
-  # Internal helper to perform a batch request for a specific request type.
-  # It groups requests by type and sends them as a single HTTP request.
   defp do_batch_request(base_url, request_type, indexed_requests) do
     indexed_requests_with_id =
       Enum.map(indexed_requests, fn {request, index} ->
@@ -212,17 +206,14 @@ defmodule ArchethicClient.API do
     end
   end
 
-  # Prepares a Req request for RPC calls.
   defp prepare_req(req, :rpc, body), do: Req.merge(req, method: :post, url: "/api/rpc", json: body)
 
-  # Prepares a Req request for GraphQL queries.
   defp prepare_req(req, :graphql_query, body) do
     req
     |> AbsintheClient.attach(graphql: "query { #{format_graphql(body)} }")
     |> Req.merge(method: :post, url: "/api")
   end
 
-  # Prepares a Req request and WebSocket connection for GraphQL subscriptions.
   defp prepare_sub(req, :graphql_subscription, body, parent) do
     req = AbsintheClient.attach(req, graphql: "subscription { #{format_graphql(body)} }")
 
@@ -232,8 +223,6 @@ defmodule ArchethicClient.API do
     end
   end
 
-  # Formats a list of GraphQL queries into a single string.
   defp format_graphql(queries) when is_list(queries), do: Enum.join(queries, ", ")
-  # Returns the GraphQL query string as is if it's not a list.
   defp format_graphql(query), do: query
 end

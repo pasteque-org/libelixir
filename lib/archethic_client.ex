@@ -24,13 +24,13 @@ defmodule ArchethicClient do
   Send a request to Archethic network
   """
   @spec request(request :: Request.t(), opts :: API.request_opts()) :: {:ok, term()} | {:error, Exception.t()}
-  def request(request, opts \\ []), do: API.request(request, opts)
+  defdelegate request(request, opts \\ []), to: API
 
   @doc """
   Same as request/2 but raise on error
   """
   @spec request!(request :: Request.t(), opts :: API.request_opts()) :: term()
-  def request!(request, opts \\ []), do: API.request!(request, opts)
+  defdelegate request!(request, opts \\ []), to: API
 
   @doc """
   Batch multiple Request into a single request per Request type
@@ -38,13 +38,13 @@ defmodule ArchethicClient do
   """
   @spec batch_requests(requests :: list(Request.t()), opts :: API.request_opts()) ::
           list({:ok, term()} | {:error, Exception.t()})
-  def batch_requests(requests, opts \\ []), do: API.batch_requests(requests, opts)
+  defdelegate batch_requests(requests, opts \\ []), to: API
 
   @doc """
   Same as batch_requests/2 but raise on error
   """
   @spec batch_requests!(requests :: list(Request.t()), opts :: API.request_opts()) :: list(term())
-  def batch_requests!(requests, opts \\ []), do: API.batch_requests!(requests, opts)
+  defdelegate batch_requests!(requests, opts \\ []), to: API
 
   @doc """
   Returns the balance of a genesis address
@@ -52,21 +52,13 @@ defmodule ArchethicClient do
   """
   @spec get_balance(genesis_address :: Crypto.hex_address(), opts :: API.request_opts()) ::
           {:ok, map()} | {:error, Exception.t()}
-  def get_balance(genesis_address, opts \\ []) do
-    genesis_address
-    |> RequestHelper.get_balance()
-    |> request(opts)
-  end
+  def get_balance(genesis_address, opts \\ []), do: genesis_address |> RequestHelper.get_balance() |> request(opts)
 
   @doc """
   Same as `get_balance/2` but raise on error
   """
   @spec get_balance!(genesis_address :: Crypto.hex_address(), opts :: API.request_opts()) :: map()
-  def get_balance!(genesis_address, opts \\ []) do
-    genesis_address
-    |> RequestHelper.get_balance()
-    |> request!(opts)
-  end
+  def get_balance!(genesis_address, opts \\ []), do: genesis_address |> RequestHelper.get_balance() |> request!(opts)
 
   @doc """
   Call a contract public function
@@ -79,7 +71,6 @@ defmodule ArchethicClient do
           opts :: API.request_opts()
         ) :: {:ok, term()} | {:error, Exception.t()}
   def call_contract_function(contract_address, function, args \\ %{}, opts \\ []) do
-    # Extract any contract function call options (like resolve_last?) and API request options
     {contract_function_call_opts, request_opts} = Keyword.split(opts, [:resolve_last?])
 
     contract_address
@@ -120,7 +111,6 @@ defmodule ArchethicClient do
     end
   end
 
-  @spec get_chain_index!(binary()) :: non_neg_integer()
   @doc """
   Same as `get_chain_index/2` but raise on error
   """

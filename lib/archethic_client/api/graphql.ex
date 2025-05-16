@@ -39,28 +39,18 @@ defmodule ArchethicClient.Graphql do
       end
     end
 
-    # Stringifies a single GraphQL argument key-value pair.
-    # Handles binary values (strings), nil, and other types.
     defp stringify_arg({key, value}) when is_binary(value), do: "#{key}: \"#{value}\""
     defp stringify_arg({key, value}) when is_nil(value), do: "#{key}: null"
     defp stringify_arg({key, value}), do: "#{key}: #{value}"
 
-    # Recursively stringifies a list of GraphQL fields.
     defp stringify_fields(fields, acc \\ "")
-    # Base case: returns the accumulated string when no fields are left.
     defp stringify_fields([], acc), do: acc
-
-    # Handles a simple atom field when the accumulator is empty.
     defp stringify_fields([field | rest], "") when is_atom(field), do: stringify_fields(rest, " #{field}")
-
-    # Handles a simple atom field, adding it to the accumulator with a comma separator.
     defp stringify_fields([field | rest], acc) when is_atom(field), do: stringify_fields(rest, "#{acc}, #{field}")
 
-    # Handles a nested field (tuple of type and sub-fields) when the accumulator is empty.
     defp stringify_fields([{type, fields} | rest], ""),
       do: stringify_fields(rest, " #{type} {#{stringify_fields(fields)}}")
 
-    # Handles a nested field, adding it to the accumulator with a comma separator.
     defp stringify_fields([{type, fields} | rest], acc),
       do: stringify_fields(rest, "#{acc}, #{type} {#{stringify_fields(fields)}}")
   end

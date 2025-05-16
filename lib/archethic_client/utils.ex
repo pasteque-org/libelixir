@@ -75,7 +75,6 @@ defmodule ArchethicClient.Utils do
   def to_bigint(value, decimals) when is_float(value), do: value |> Decimal.from_float() |> do_to_big_int(decimals)
   def to_bigint(value, decimals) when is_binary(value), do: value |> Decimal.new() |> do_to_big_int(decimals)
 
-  # Internal helper to convert a Decimal to a big integer representation.
   defp do_to_big_int(dec, decimals) do
     dec
     |> Decimal.mult(get_factor(decimals))
@@ -90,6 +89,5 @@ defmodule ArchethicClient.Utils do
   def from_bigint(bigint, decimals \\ 8),
     do: bigint |> Decimal.new() |> Decimal.div(get_factor(decimals)) |> Decimal.to_string(:normal)
 
-  # Calculates the factor (10^decimals) for bigint conversions.
   defp get_factor(decimals), do: 10 |> :math.pow(decimals) |> trunc()
 end

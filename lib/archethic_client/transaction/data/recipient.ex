@@ -4,12 +4,8 @@ defmodule ArchethicClient.TransactionData.Recipient do
 
   A recipient record specifies:
   - `address`: The address of the target smart contract.
-  - `action`: The name of the function (action) to be called on the smart contract. Can be `nil`.
-  - `args`: A map of arguments to be passed to the smart contract function. Can be `nil`.
-
-  The `action` and `args` fields might be `nil` if the transaction itself is the trigger
-  (e.g., a simple transfer to a contract address that has a default payable/receive function),
-  or they are filled when a specific function with arguments is being invoked.
+  - `action`: The name of the function (action) to be called on the smart contract.
+  - `args`: A map of arguments to be passed to the smart contract function.
   """
   alias ArchethicClient.Crypto
   alias ArchethicClient.Utils.TypedEncoding

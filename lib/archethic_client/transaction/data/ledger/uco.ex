@@ -21,23 +21,6 @@ defmodule ArchethicClient.TransactionData.Ledger.UCOLedger do
 
   @doc """
   Serialize a UCO ledger into binary format
-
-  ## Examples
-
-      iex> %UCOLedger{
-      ...>   transfers: [
-      ...>     %Transfer{
-      ...>       to:
-      ...>         <<0, 0, 59, 140, 2, 130, 52, 88, 206, 176, 29, 10, 173, 95, 179, 27, 166, 66, 52,
-      ...>           165, 11, 146, 194, 246, 89, 73, 85, 202, 120, 242, 136, 136, 63, 53>>,
-      ...>       amount: 1_050_000_000
-      ...>     }
-      ...>   ]
-      ...> }
-      ...> |> UCOLedger.serialize()
-      <<1, 1, 0, 0, 59, 140, 2, 130, 52, 88, 206, 176, 29, 10, 173, 95, 179, 27, 166, 66, 52, 165,
-        11, 146, 194, 246, 89, 73, 85, 202, 120, 242, 136, 136, 63, 53, 0, 0, 0, 0, 62, 149, 186,
-        128>>
   """
   @spec serialize(uco_ledger :: t()) :: binary()
   def serialize(%__MODULE__{transfers: transfers}) do

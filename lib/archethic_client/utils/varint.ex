@@ -2,13 +2,6 @@ defmodule ArchethicClient.Utils.VarInt do
   @moduledoc """
     Provides functions for encoding integers into a variable-length binary format
     and decoding them back.
-
-    In this VarInt implementation:
-    - The first byte of the encoded binary indicates the number of subsequent bytes (`N`)
-      that constitute the actual integer value.
-    - The integer itself is then stored in those `N` bytes.
-
-    This is useful for compactly representing integers where smaller values use fewer bytes.
   """
 
   @doc """
@@ -29,14 +22,8 @@ defmodule ArchethicClient.Utils.VarInt do
     <<bytes::8, value::bytes*8>>
   end
 
-  # Calculates the minimum number of bytes required to store the given integer value.
-  # It finds the smallest N (from 1 to 255) such that `value < 2^(8*N)`.
   @spec min_bytes_to_store(integer()) :: integer()
   defp min_bytes_to_store(value) do
-    # Since values go from
-    # 1*8 => 2^8 => 255 ~BYTES=1
-    # 2*8 => 16 => 2^16 => 65535 ~BYTES=2
-    # 3*8 => 24 => 2^24 => 16777215 ~BYTES=3
     Enum.find(1..255, fn x -> value < Integer.pow(2, 8 * x) end)
   end
 

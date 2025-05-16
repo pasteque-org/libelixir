@@ -29,13 +29,6 @@ defmodule ArchethicClient.Crypto do
   @type versioned_hash :: <<_::8, _::_*8>>
 
   @typedoc """
-  Binary representing a hash prepend by two bytes
-  - first byte to identify the curve type
-  - second byte to identify hash algorithm of the generated hash
-  """
-  @type prepended_hash :: <<_::16, _::_*8>>
-
-  @typedoc """
   Binary representing an address
   - first byte to identify the curve type
   - second byte to identify hash algorithm of the generated hash

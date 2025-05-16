@@ -34,7 +34,6 @@ defmodule ArchethicClient.TransactionData.Contract do
 
   If nil is provided, nil is returned.
   The bytecode is Base16 encoded in the resulting map.
-  The manifest structure is preserved, with specific handling for `upgradeOpts`.
   """
   @spec to_map(contract :: nil | t()) :: nil | map()
   def to_map(nil), do: nil
