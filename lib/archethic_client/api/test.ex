@@ -27,12 +27,12 @@ defmodule ArchethicClient.APITest do
   The `req` and `resp` arguments are part of the `Req.Test` plug interface.
   `{:data, data}` is the term returned by the stub function defined in `stub/1`.
   """
-  def parse_resp({:data, data}, {req, resp}) do
+  def parse_resp({:data, data}, {%Req.Request{} = req, %Req.Response{} = resp}) do
     callback = :erlang.binary_to_term(data, [:safe])
 
     body = req |> Req.Request.get_private(:archethic_client) |> create_resp_body(callback)
 
-    resp = %Req.Response{resp | body: body}
+    resp = %{resp | body: body}
 
     {:cont, {req, resp}}
   end

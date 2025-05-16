@@ -44,14 +44,14 @@ defmodule ArchethicClient.TransactionData do
   Set the content of a transaction
   """
   @spec set_content(data :: t(), content :: binary()) :: t()
-  def set_content(%__MODULE__{} = data, content) when is_binary(content), do: %__MODULE__{data | content: content}
+  def set_content(%__MODULE__{} = data, content) when is_binary(content), do: %{data | content: content}
 
   @doc """
   Set the contract of a transaction. Accepts a Contract struct or nil.
   """
   @spec set_contract(data :: t(), contract :: Contract.t() | nil) :: t()
-  def set_contract(%__MODULE__{} = data, %Contract{} = contract), do: %__MODULE__{data | contract: contract}
-  def set_contract(%__MODULE__{} = data, nil), do: %__MODULE__{data | contract: nil}
+  def set_contract(%__MODULE__{} = data, %Contract{} = contract), do: %{data | contract: contract}
+  def set_contract(%__MODULE__{} = data, nil), do: %{data | contract: nil}
 
   @doc """
   Add an ownership to a transaction
@@ -73,7 +73,7 @@ defmodule ArchethicClient.TransactionData do
       when is_binary(secret) and is_list(authorized_keys) and is_binary(secret_key) do
     ownership = Ownership.new(secret, authorized_keys, secret_key)
 
-    %__MODULE__{data | ownerships: ownerships ++ [ownership]}
+    %{data | ownerships: ownerships ++ [ownership]}
   end
 
   @doc """
@@ -108,7 +108,7 @@ defmodule ArchethicClient.TransactionData do
   def add_recipient(%__MODULE__{recipients: recipients} = data, to, action, args \\ %{})
       when is_binary(to) and is_binary(action) and is_map(args) do
     recipient = %Recipient{address: to, action: action, args: args}
-    %__MODULE__{data | recipients: [recipient | recipients]}
+    %{data | recipients: [recipient | recipients]}
   end
 
   @doc """

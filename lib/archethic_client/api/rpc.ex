@@ -89,7 +89,7 @@ defmodule ArchethicClient.RPC do
     def format_response(request, request_id, %Req.Response{status: 200, body: results} = response)
         when is_list(results) do
       request_response = Enum.find(results, nil, &match?(^request_id, &1["id"]))
-      format_response(request, request_id, %Req.Response{response | body: request_response})
+      format_response(request, request_id, %{response | body: request_response})
     end
 
     def format_response(_, _, %Req.Response{status: status, body: body}) do
