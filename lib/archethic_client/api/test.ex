@@ -28,7 +28,7 @@ defmodule ArchethicClient.APITest do
   `{:data, data}` is the term returned by the stub function defined in `stub/1`.
   """
   def parse_resp({:data, data}, {req, resp}) do
-    callback = :erlang.binary_to_term(data)
+    callback = :erlang.binary_to_term(data, [:safe])
 
     body = req |> Req.Request.get_private(:archethic_client) |> create_resp_body(callback)
 
