@@ -1,5 +1,7 @@
 defmodule ArchethicClient.Crypto.Ed25519 do
-  @moduledoc false
+  @moduledoc """
+  Module for Ed25519 key pair generation and signing/verification.
+  """
 
   import Bitwise
 

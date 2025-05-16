@@ -1,5 +1,7 @@
 defmodule ArchethicClient.Crypto.ECDSA do
-  @moduledoc false
+  @moduledoc """
+  Module for ECDSA key pair generation and signing/verification.
+  """
 
   @type curve :: :secp256r1 | :secp256k1
 
