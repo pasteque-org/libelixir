@@ -32,56 +32,51 @@ defmodule ArchethicClient.Utils.TypedEncoding do
 
   @doc """
   Serializes an Elixir data type into a type-prefixed binary format.
-
-  Uses an 8-bit size for sign/boolean representation by default in the compact format.
   """
   @spec serialize(arg()) :: binary()
-  # Default bit_size for sign/bool etc.
-  def serialize(data), do: do_serialize(data, 8)
-
-  defp do_serialize(int, bit_size) when is_integer(int) do
+  def serialize(int) when is_integer(int) do
     sign_bit = sign_to_bit(int)
     bin = int |> abs() |> VarInt.from_value()
 
-    <<@type_int::8, sign_bit::integer-size(bit_size), bin::bitstring>>
+    <<@type_int::8, sign_bit::8, bin::binary>>
   end
 
-  defp do_serialize(float, bit_size) when is_float(float) do
+  def serialize(float) when is_float(float) do
     sign_bit = sign_to_bit(float)
     bin = float |> abs() |> Utils.to_bigint() |> VarInt.from_value()
-    <<@type_float::8, sign_bit::integer-size(bit_size), bin::bitstring>>
+    <<@type_float::8, sign_bit::8, bin::binary>>
   end
 
-  defp do_serialize(bin, _bit_size) when is_binary(bin) do
+  def serialize(bin) when is_binary(bin) do
     size = byte_size(bin)
     size_bin = VarInt.from_value(size)
-    <<@type_str::8, size_bin::binary, bin::bitstring>>
+    <<@type_str::8, size_bin::binary, bin::binary>>
   end
 
-  defp do_serialize(list, bit_size) when is_list(list) do
+  def serialize(list) when is_list(list) do
     size = length(list)
     size_bin = VarInt.from_value(size)
 
     Enum.reduce(list, <<@type_list::8, size_bin::binary>>, fn item, acc ->
-      <<acc::bitstring, do_serialize(item, bit_size)::bitstring>>
+      <<acc::binary, serialize(item)::binary>>
     end)
   end
 
-  defp do_serialize(map, bit_size) when is_map(map) do
+  def serialize(map) when is_map(map) do
     size = map_size(map)
     size_bin = VarInt.from_value(size)
 
     Enum.reduce(map, <<@type_map::8, size_bin::binary>>, fn {k, v}, acc ->
-      <<acc::bitstring, do_serialize(k, bit_size)::bitstring, do_serialize(v, bit_size)::bitstring>>
+      <<acc::binary, serialize(k)::binary, serialize(v)::binary>>
     end)
   end
 
-  defp do_serialize(bool, bit_size) when is_boolean(bool) do
+  def serialize(bool) when is_boolean(bool) do
     bool_bit = if bool, do: 1, else: 0
-    <<@type_bool::8, bool_bit::integer-size(bit_size)>>
+    <<@type_bool::8, bool_bit::8>>
   end
 
-  defp do_serialize(nil, _bit_size), do: <<@type_nil::8>>
+  def serialize(nil), do: <<@type_nil::8>>
 
   defp sign_to_bit(num) when num >= 0, do: 1
   defp sign_to_bit(_num), do: 0

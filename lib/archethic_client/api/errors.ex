@@ -37,23 +37,17 @@ defmodule ArchethicClient.RPCError do
   It combines the main error message with any nested messages found in the `data` field.
   """
   def message(%__MODULE__{message: message, data: data}) do
-    messages = data |> stringify_data()
+    messages = stringify_data(data)
     Enum.join([message | messages], ": ")
   end
 
-  defp stringify_data(data) do
-    do_stringify_data(data, []) |> Enum.reverse()
-  end
+  defp stringify_data(data, acc \\ [])
+  defp stringify_data(data, acc) when is_binary(data), do: [data | acc]
 
-  defp do_stringify_data(data_item, acc) when is_binary(data_item) do
-    [data_item | acc]
-  end
-  defp do_stringify_data(%{"message" => msg, "data" => nested_data}, acc) when is_binary(msg) do
-    do_stringify_data(nested_data, [msg | acc])
-  end
-  defp do_stringify_data(_data_item, acc) do
-    acc
-  end
+  defp stringify_data(%{"message" => message, "data" => data}, acc) when is_binary(message),
+    do: stringify_data(data, [message | acc])
+
+  defp stringify_data(_data, acc), do: Enum.reverse(acc)
 end
 
 defmodule ArchethicClient.ValidationError do
@@ -75,19 +69,13 @@ defmodule ArchethicClient.ValidationError do
     Enum.join([context, message | messages], ": ")
   end
 
-  defp stringify_data(data) do
-    do_stringify_data(data, []) |> Enum.reverse()
-  end
+  defp stringify_data(data, acc \\ [])
+  defp stringify_data(data, acc) when is_binary(data), do: [data | acc]
 
-  defp do_stringify_data(data_item, acc) when is_binary(data_item) do
-    [data_item | acc]
-  end
-  defp do_stringify_data(%{"message" => msg, "data" => nested_data}, acc) when is_binary(msg) do
-    do_stringify_data(nested_data, [msg | acc])
-  end
-  defp do_stringify_data(_data_item, acc) do
-    acc
-  end
+  defp stringify_data(%{"message" => message, "data" => data}, acc) when is_binary(message),
+    do: stringify_data(data, [message | acc])
+
+  defp stringify_data(_data, acc), do: Enum.reverse(acc)
 
   @doc """
   Transform a map to a validation error exception
@@ -188,9 +176,7 @@ defmodule ArchethicClient.RequestError do
   """
   @spec message(exception :: Exception.t()) :: message :: String.t()
   def message(%__MODULE__{http_status: status, body: ""}), do: Map.get(@statuses, status, "Unknown http status error")
-
   def message(%__MODULE__{body: body}) when is_binary(body), do: body
   def message(%__MODULE__{body: %{"error" => error}}) when is_binary(error), do: error
-
   def message(%__MODULE__{body: %{"error" => %{"message" => message}}}) when is_binary(message), do: message
 end

@@ -34,7 +34,7 @@ defmodule ArchethicClient.TransactionData.Ledger.TokenLedger.Transfer do
   @doc """
   Serialize Token transfer into binary format
   """
-  @spec serialize(token_transfer :: t()) :: bitstring()
+  @spec serialize(token_transfer :: t()) :: binary()
   def serialize(%__MODULE__{token_address: token, to: to, amount: amount, token_id: token_id}),
     do: <<token::binary, to::binary, amount::64, VarInt.from_value(token_id)::binary>>
 

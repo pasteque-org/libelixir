@@ -14,7 +14,7 @@ defmodule ArchethicClient.TransactionData.Recipient do
 
   @type t :: %__MODULE__{
           address: Crypto.address(),
-          action: String.t() | nil,
+          action: String.t(),
           args: map() | nil
         }
 
@@ -23,12 +23,7 @@ defmodule ArchethicClient.TransactionData.Recipient do
   """
   @spec serialize(recipient :: t()) :: binary()
   def serialize(%__MODULE__{address: address, action: action, args: args}) do
-    actual_action = action || ""
-    actual_args = args || %{}
-
-    serialized_args_binary = TypedEncoding.serialize(actual_args)
-
-    <<1::8, address::binary, byte_size(actual_action)::8, actual_action::binary, serialized_args_binary::binary>>
+    <<1::8, address::binary, byte_size(action)::8, action::binary, TypedEncoding.serialize(args)::binary>>
   end
 
   @doc """

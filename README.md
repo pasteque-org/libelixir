@@ -19,31 +19,18 @@ Add `archethic_client` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:archethic_client, "~> 0.1.1"}
+    {:archethic_client, "~> 0.1.0"}
   ]
 end
 ```
 
-Then run:
-
-```sh
-mix deps.get
-```
-
 ## Usage
 
-Import the main module in your Elixir code:
+TODO
 
-```elixir
-alias ArchethicClient
-```
 ## Tests
 
-To run tests:
-
-```sh
-mix test
-```
+TODO
 
 ## Contributing
 

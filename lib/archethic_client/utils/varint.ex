@@ -16,7 +16,7 @@ defmodule ArchethicClient.Utils.VarInt do
       iex> ArchethicClient.Utils.VarInt.from_value(300)
       <<2, 1, 44>> # 300 = 256 * 1 + 44
   """
-  @spec from_value(integer()) :: bitstring()
+  @spec from_value(integer()) :: binary()
   def from_value(value) do
     bytes = min_bytes_to_store(value)
     <<bytes::8, value::bytes*8>>
@@ -25,30 +25,5 @@ defmodule ArchethicClient.Utils.VarInt do
   @spec min_bytes_to_store(integer()) :: integer()
   defp min_bytes_to_store(value) do
     Enum.find(1..255, fn x -> value < Integer.pow(2, 8 * x) end)
-  end
-
-  @doc """
-  Decodes a VarInt binary back into an integer and the rest of the binary string.
-
-  It reads the first byte to determine how many subsequent bytes (`N`) form the integer.
-  Then, it reads those `N` bytes to reconstruct the integer value.
-
-  Returns a tuple `{integer_value, rest_of_binary_string}`.
-
-  ## Examples
-      iex> ArchethicClient.Utils.VarInt.get_value(<<1, 200, 99, 98>>)
-      {200, <<99, 98>>}
-      iex> ArchethicClient.Utils.VarInt.get_value(<<2, 1, 44, 99, 98>>)
-      {300, <<99, 98>>}
-  """
-  @spec get_value(bitstring()) :: {integer(), bitstring()}
-  def get_value(data) do
-    <<bytes::8, rest::bitstring>> = data
-    <<value::bytes*8, rest::bitstring>> = rest
-
-    {
-      value,
-      rest
-    }
   end
 end

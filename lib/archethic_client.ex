@@ -156,8 +156,7 @@ defmodule ArchethicClient do
         end
       end)
 
-    case Task.yield(task, @tx_validation_timeout * 2) ||
-           Task.shutdown(task, :brutal_kill) do
+    case Task.yield(task, @tx_validation_timeout * 2) || Task.shutdown(task, :brutal_kill) do
       {:ok, res} -> res
       {:exit, reason} -> {:error, reason}
       nil -> {:error, :timeout}

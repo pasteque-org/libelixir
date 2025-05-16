@@ -32,7 +32,7 @@ defmodule ArchethicClient.TransactionData.Ledger do
   @doc """
   Converts a `Ledger` struct into a map representation.
   """
-  @spec to_map(ledger :: t() | nil) :: map()
+  @spec to_map(ledger :: t()) :: map()
   def to_map(%__MODULE__{uco: uco, token: token}) do
     %{
       uco: UCOLedger.to_map(uco),
